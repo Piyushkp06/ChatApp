@@ -1,9 +1,11 @@
 import { clsx } from "clsx";
-import { twMerge } from "tailwind-merge"
+import { twMerge } from "tailwind-merge";
+import animationData from "@/assets/lottie-json"; // Path to your animation JSON file
 
 export function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
+
 export const colors = [
   "bg-[#712c4a57] text-[#ff006e] border-[1px] border-[#ff006eaa]",
   "bg-[#ffd60a2a] text-[#ffd60a] border-[1px] border-[#ffd60abb]",
@@ -13,9 +15,10 @@ export const colors = [
 
 export const getColor = (color) => {
   if (color >= 0 && color < colors.length) {
-      return colors[color];
+    return colors[color];
   }
   return colors[0]; // Fallback to the first color if out of range
 };
 
-
+// Export the animation JSON directly for Player's `src` prop
+export const animationJson = animationData;

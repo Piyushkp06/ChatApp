@@ -188,3 +188,14 @@ export const removeProfileImage= async(request,response,next)=>{
         throw new ApiError(500,"Internal Server Error");
     }
 };
+
+export const Logout= async(request,response,next)=>{
+    try{
+         response.cookie("jwt","",{maxAge:1,secure:true,sameSite:"None"})
+        return response.status(200).send("Logout Successfully");    
+    }
+        catch(error){
+        console.log({error});
+        throw new ApiError(500,"Internal Server Error");
+    }
+};
