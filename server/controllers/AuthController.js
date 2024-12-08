@@ -1,6 +1,6 @@
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse} from "../utils/ApiResponse.js";
-import {User} from "../models/UserModel.js"
+import User from "../models/UserModel.js"
 import jwt from "jsonwebtoken"
 import { compare } from "bcrypt";
 import {renameSync,unlinkSync} from "fs"
@@ -19,8 +19,9 @@ export const signup= async(request,response,next)=>{
         const user = await User.create({email, password});
 
         response.cookie("jwt",createToken(email,user.id),{
-            maxAge:maxAge*1000,
+            maxAge:maxAge,
             secure:true,
+            httpOnly:true,
             sameSite:"None",
 
         });
@@ -59,6 +60,7 @@ export const login= async(request,response,next)=>{
 
         response.cookie("jwt",createToken(email,user.id),{
             maxAge,
+            httpOnly:true,
             secure:true,
             sameSite:"None",
 

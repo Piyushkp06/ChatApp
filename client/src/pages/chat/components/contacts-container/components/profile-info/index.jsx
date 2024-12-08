@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import {IoPowerSharp} from "react-icons/io5"
 import apiClient from '@/lib/api-client';
 import { LOGOUT_ROUTE } from '@/utils/constants';
+import { HOST } from '@/utils/constants';
+import { getColor } from '@/lib/utils';
 
   
 
@@ -45,7 +47,7 @@ function ProfileInfo() {
               className="object-cover w-full h-full bg-black"
               /> 
               ) : (
-              <div className={`uppercase h-12 w-12 text-lg border-[1px] flex items-center justify-center rounded-full ${userInfo.color}`}>
+              <div className={`uppercase h-12 w-12 text-lg border-[1px] flex items-center justify-center rounded-full  ${getColor(userInfo.color)}`}>
                 {userInfo.firstName
                  ?userInfo.firstName.split("").shift()
                  :userInfo.email.split("").shift()}
