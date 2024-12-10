@@ -3,14 +3,19 @@ import {GrAttachment} from 'react-icons/gr'
 import {RiEmojiStickerLine } from 'react-icons/ri';
 import { IoSend } from 'react-icons/io5';
 import EmojiPicker from 'emoji-picker-react';
+import { useAppStore } from '@/store';
+import { useSocket } from '@/context/SocketContext';
 
 
 function MessageBar() {
    const emojiRef=useRef();
+   const socket=useSocket();
+   const {selectedChatData,selectedChatType,userInfo} = useAppStore()
    const [message,setMessage] =useState("");
    const [emojiPickerOpen,setEmojiPickerOpen]=useState(false);
 
-  useEffect(()=>{
+
+  useEffect(()=>{ 
     function handleClickOutside(event){
       if(emojiRef.current && !emojiRef.current.contains(event.target)){
         setEmojiPickerOpen(false);
@@ -24,10 +29,33 @@ function MessageBar() {
 
    const handleAddEmoji=(emoji)=>{
     setMessage((message)=>message+emoji.emoji);
-   }
+   } 
 
-  const handleSendMessage=async()=>{
-
+   const handleSendMessage = async () => {
+    if (selectedChatType === "contact" && message.trim()) {
+      console.log("Sending message:", { message });
+    
+      socket.emit(
+        "sendMessage",
+        {
+          sender: userInfo.id,
+          content: message,
+          recipient: selectedChatData?._id,
+          messageTypes: "text",
+          fileUrl: undefined,
+        },
+        (response) => {
+          if (response.status === "success") {
+            console.log("Message sent successfully:", response.message);
+          } else {
+            console.error("Message sending failed:", response.message);
+          }
+        }
+      );
+      
+      
+    setMessage("");
+    }
   }
    return (
     <div className="h-[10vh] bg-[#1c1d25] flex justify-center items-center px-8 mb-6 gap-6">
