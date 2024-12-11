@@ -50,17 +50,30 @@ function Auth() {
   };
 
   const handleLogin = async () => {
-    if(validateLogin()){
-      const response = await apiClient.post(LOGIN_ROUTE, { email, password },{withCredentials:true});
-      console.log("Login Response:", response.data);
+    if (validateLogin()) {
+      try {
+        const response = await apiClient.post(
+          LOGIN_ROUTE,
+          { email, password },
+          { withCredentials: true }
+        );
+        console.log("Login Response:", response.data);
         toast.success("Login successful!");
-        if(response.data.user.id){
+        if (response.data.user.id) {
+          console.log("response.data.user.id",response.data.user.id);
           setUserInfo(response.data.user);
-          if(response.data.user.profileSetup) navigate("/chat");
+          if (response.data.user.profileSetup) navigate("/chat");
           else navigate("/profile");
         }
+      } catch (error) {
+        console.error("Login Error:", error);
+        toast.error(
+          error.response?.data?.message || "An error occurred during login"
+        );
+      }
     }
   };
+  
   const handleSignup = async () => {
     if (validateSignup()) {
       try {

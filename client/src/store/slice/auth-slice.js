@@ -1,5 +1,5 @@
 export const createAuthSlice=(set)=>({
-    userInfo:undefined,
+    userInfo:null,
     setUserInfo:(userInfo)=>set({userInfo}),
 }
 );

@@ -27,7 +27,8 @@ const setupSocket = (server) => {
       console.log("Message received on server:", message);
       const senderSocketId = userSocketMap.get(message.sender);
       const recipientSocketId = userSocketMap.get(message.recipient);
-
+      console.log(senderSocketId,"senderSocketId");
+      console.log(recipientSocketId,"recipientSocketId");
       // Create the message in the database
       const createdMessage = await Message.create(message);
 
@@ -35,13 +36,15 @@ const setupSocket = (server) => {
       const messageData = await Message.findById(createdMessage._id)
         .populate("sender", "id email firstName lastName image color")
         .populate("recipient", "id email firstName lastName image color");
-
+        // console.log("messageDta",messageData);
       // Emit the message to the recipient and sender
       if (recipientSocketId) {
         io.to(recipientSocketId).emit("receiveMessage", messageData);
+        console.log("reci",messageData);
       }
       if (senderSocketId) {
         io.to(senderSocketId).emit("receiveMessage", messageData);
+        console.log("send",messageData);
       }
 
       // Send acknowledgment back to the sender
@@ -54,7 +57,7 @@ const setupSocket = (server) => {
 
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
-
+     console.log("userId",userId);
     if (userId) {
       userSocketMap.set(userId, socket.id);
       console.log(`User connected: ${userId} with socket ID: ${socket.id}`);

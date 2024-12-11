@@ -41,7 +41,7 @@ function MessageBar() {
           sender: userInfo.id,
           content: message,
           recipient: selectedChatData?._id,
-          messageTypes: "text",
+          messageType: "text",
           fileUrl: undefined,
         },
         (response) => {

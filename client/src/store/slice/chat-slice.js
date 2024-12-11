@@ -11,24 +11,20 @@ export const createChatSlice=(set,get)=>({
         selectedChatMessages:[],
     }),
     addMessage:(message)=>{
-        const selectedChatMessages = get().selectedChatMessages;
         const selectedChatType = get().selectedChatType;
-
-        set({ 
-          selectedChatMessages:[
-            ...selectedChatMessages,{
-                ...message,
-                recipent: 
-                selectedChatType === "channel"
-                ? message.recipent
-                 :message.recipent._id,
-                 sender:
-                 selectedChatType === "channel"
-                 ? message.recipent
-                  :message.recipent._id,
-            }
-          ]
-
-        })
+        const selectedChatMessages = get().selectedChatMessages;
+        console.log("Before adding:", selectedChatMessages);
+      
+        const updatedMessages = [
+          ...selectedChatMessages,
+          {
+            ...message,
+            recipient: selectedChatType === "channel" ? message.recipient : message.recipient?._id,
+            sender: selectedChatType === "channel" ? message.sender : message.sender?._id,
+          },
+        ];
+      
+        console.log("After adding:", updatedMessages);
+        set({ selectedChatMessages: updatedMessages });
     }
 })

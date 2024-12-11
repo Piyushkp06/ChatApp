@@ -11,7 +11,7 @@ recipient:{
     ref:"Users",
     required:false,
  },
- messageTypes:{
+ messageType:{
     type:String,
     enum:["text","file"],
     required:true,
