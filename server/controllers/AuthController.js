@@ -18,7 +18,7 @@ export const signup= async(request,response,next)=>{
         }
         const user = await User.create({email, password});
 
-        response.cookie("jwt",createToken(email,user.id),{
+        response.cookie("jwt",createToken(email,user._id),{
             maxAge:maxAge,
             secure:true,
             httpOnly:true,
@@ -27,7 +27,7 @@ export const signup= async(request,response,next)=>{
         });
         return response.status(201).json({
             user:{
-                id:user.id,
+                id:user._id,
                 email:user.email,
              profileSetup:user.profileSetup 
             },
@@ -58,7 +58,7 @@ export const login= async(request,response,next)=>{
             throw new ApiError(400,"Password is incorrect");
         }
 
-        response.cookie("jwt",createToken(email,user.id),{
+        response.cookie("jwt",createToken(email,user._id),{
             maxAge,
             httpOnly:true,
             secure:true,
@@ -67,7 +67,7 @@ export const login= async(request,response,next)=>{
         });
         return response.status(200).json({
             user:{
-             id:user.id,
+             id:user._id,
              email:user.email,
              profileSetup:user.profileSetup ,
              firstName:user.firstName,
@@ -94,7 +94,7 @@ export const getUserInfo= async(request,response,next)=>{
   
         return response.status(200).json({
        
-             id:userData.id,
+             id:userData._id,
              email:userData.email,
              profileSetup:userData.profileSetup ,
              firstName:userData.firstName,
@@ -128,7 +128,7 @@ export const updateProfile= async(request,response,next)=>{
        );
         return response.status(200).json({
        
-             id:userData.id,
+             id:userData._id,
              email:userData.email,
              profileSetup:userData.profileSetup ,
              firstName:userData.firstName,
