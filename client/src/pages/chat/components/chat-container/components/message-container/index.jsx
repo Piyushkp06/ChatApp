@@ -1,78 +1,96 @@
-import React, { useEffect } from 'react'
-import { useAppStore } from '@/store';
-import { useRef } from 'react';
-import moment from 'moment';
+import React, { useEffect, useRef } from "react";
+import { useAppStore } from "@/store";
+import moment from "moment";
+import apiClient from "@/lib/api-client";
+import { GET_ALL_MESSAGES_ROUTE } from "@/utils/constants";
 
 function MessageContainer() {
-  const scrollRef=useRef();
-  const {selectedChatData,selectedChatType,userInfo,selectedChatMessages} = useAppStore();
+  const scrollRef = useRef();
+  const { selectedChatData, selectedChatType, userInfo, selectedChatMessages,setSelectedChatMessages } = useAppStore();
 
-     useEffect(()=>{
-      if(scrollRef.current){
-        scrollRef.current.scrollIntoView({behavior:"smooth"});
-      }
-     },[selectedChatMessages]);
-     
-     const renderDMMessages=(message)=>(
+useEffect(()=>{
+  const getMessages= async()=>{
 
-  <div className={`${
-    message.sender === selectedChatData._id ? "text-left":"text-right"
-  }`}>
-    {
-      message.messageType === "text" && (
-        <div className=
-        {`${message.sender !== selectedChatData._id?
-          "bg-[#8417ff]/5 text-[#8417ff]/90 border-[#8417ff]/50"
-          :"bg-[#2a2b33]/5 text-white/80 border-white/20"
-        }
-           border inline-block p-4 rounded my01 max-w-[50%] break-words`}
+ try {
+  const response = await apiClient.post(
+    GET_ALL_MESSAGES_ROUTE,
+    {id:selectedChatData._id},
+    {withCredentials:true}
+  );
+  if(response.data.messages){
+        setSelectedChatMessages(response.data.messages)
+  }
+ } catch (error) {
+  console.log({error});
+ };
+};
+  if(selectedChatData._id){
+    if(selectedChatType==="contact") getMessages();
+  }
+},[selectedChatData,selectedChatType,setSelectedChatMessages]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [selectedChatMessages]);
+
+  const renderDMMessages = (message) => (
+    <div
+      className={`${
+        message.sender === userInfo?.id ? "text-left" : "text-right"
+      }`}
+    >
+      {message.messageType === "text" && (
+        <div
+          className={`${
+            message.sender === userInfo?.id 
+              ? "bg-[#8417ff]/5 text-[#8417ff]/90 border-[#8417ff]/50"
+              : "bg-[#2a2b33]/5 text-white/80 border-white/20"
+          }
+           border inline-block p-4 rounded my-1 max-w-[50%] break-words`}
         >
           {message.content}
         </div>
-      )
-      }
+      )}
       <div className="text-xs text-gray-600">
-        {
-          moment(message.timestamp).format("LT")
-        }
+        {moment(message.timestamp).format("LT")}
       </div>
-
-  </div>
+    </div>
   );
 
+  const renderMessages = () => {
+    let lastDate = null;
+    const filteredMessages = selectedChatMessages.filter(
+      (message) =>
+        (message.sender === selectedChatData._id && message.recipient === userInfo?.id) ||
+        (message.sender === userInfo?.id && message.recipient === selectedChatData._id)
+    );
 
+    return filteredMessages.map((message, index) => {
+      const messageDate = moment(message.timestamp).format("YYYY-MM-DD");
+      const showDate = messageDate !== lastDate;
+      lastDate = messageDate;
 
-  const renderMessages=()=>{
-   let lastDate=null;
-    return selectedChatMessages.map((message,index)=>{
-      const messageDate=moment(message.timestamp).format("YYYY-MM-DD");
-      const showDate = messageDate!==lastDate;
-      lastDate=messageDate;
-      return(
-      
+      return (
         <div key={index}>
-          {showDate && (<div className="text-center text-gray-500 my-2">
-            {moment(message.timestamp).format("LL")}
-            </div>)}
-          
-            {
-              
-              selectedChatType === "contact" && renderDMMessages(message)
-            }
-            
+          {showDate && (
+            <div className="text-center text-gray-500 my-2">
+              {moment(message.timestamp).format("LL")}
+            </div>
+          )}
+          {selectedChatType === "contact" && renderDMMessages(message)}
         </div>
-      )
-      
-    }
-  );
+      );
+    });
   };
 
   return (
     <div className="flex-1 overflow-y-auto scrollbar-hidden p-4 px-8 md:w-[65vw] lg:w-[70vw] xl:w-[80vw] w-full">
       {renderMessages()}
-      <div ref={scrollRef}/>
-      </div>
-  )
+      <div ref={scrollRef} />
+    </div>
+  );
 }
 
 export default MessageContainer;

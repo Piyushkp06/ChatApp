@@ -33,12 +33,18 @@ function MessageBar() {
 
    const handleSendMessage = async () => {
     if (selectedChatType === "contact" && message.trim()) {
-      console.log("Sending message:", { message });
-    
+  //    console.log("Sending message:", { message });
+  //    console.log("Socket instance:", socket);
+if (socket?.connected) {
+  //console.log("Socket is connected");
+} else {
+ // console.error("Socket is not connected");
+}
+
       socket.emit(
         "sendMessage",
         {
-          sender: userInfo.id,
+          sender: userInfo?.id,
           content: message,
           recipient: selectedChatData?._id,
           messageType: "text",

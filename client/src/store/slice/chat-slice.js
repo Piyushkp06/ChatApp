@@ -13,7 +13,7 @@ export const createChatSlice=(set,get)=>({
     addMessage:(message)=>{
         const selectedChatType = get().selectedChatType;
         const selectedChatMessages = get().selectedChatMessages;
-        console.log("Before adding:", selectedChatMessages);
+       // console.log("Before adding:", selectedChatMessages);
       
         const updatedMessages = [
           ...selectedChatMessages,
@@ -24,7 +24,7 @@ export const createChatSlice=(set,get)=>({
           },
         ];
       
-        console.log("After adding:", updatedMessages);
+      //  console.log("After adding:", updatedMessages);
         set({ selectedChatMessages: updatedMessages });
     }
 })

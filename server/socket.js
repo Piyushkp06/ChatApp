@@ -27,8 +27,8 @@ const setupSocket = (server) => {
       console.log("Message received on server:", message);
       const senderSocketId = userSocketMap.get(message.sender);
       const recipientSocketId = userSocketMap.get(message.recipient);
-      console.log(senderSocketId,"senderSocketId");
-      console.log(recipientSocketId,"recipientSocketId");
+    //  console.log(senderSocketId,"senderSocketId");
+     // console.log(recipientSocketId,"recipientSocketId");
       // Create the message in the database
       const createdMessage = await Message.create(message);
 
@@ -40,11 +40,11 @@ const setupSocket = (server) => {
       // Emit the message to the recipient and sender
       if (recipientSocketId) {
         io.to(recipientSocketId).emit("receiveMessage", messageData);
-        console.log("reci",messageData);
+      //  console.log("reci",messageData);
       }
       if (senderSocketId) {
         io.to(senderSocketId).emit("receiveMessage", messageData);
-        console.log("send",messageData);
+     //   console.log("send",messageData);
       }
 
       // Send acknowledgment back to the sender
@@ -59,9 +59,9 @@ const setupSocket = (server) => {
     const userId = socket.handshake.query.userId;
     if (userId) {
       userSocketMap.set(userId, socket.id);
-      console.log(`User connected: ${userId} with socket ID: ${socket.id}`);
+    //  console.log(`User connected: ${userId} with socket ID: ${socket.id}`);
     } else {
-      console.log("User ID not provided during connection");
+    //  console.log("User ID not provided during connection");
     }
 
     // Pass the data and acknowledgment callback to the sendMessage handler
