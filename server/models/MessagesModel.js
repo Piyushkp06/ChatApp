@@ -30,7 +30,7 @@ fileUrl:{
 },
 timestamp:{
     type:Date,
-    defaullt:Date.now,
+    default:Date.now,
 },
 });
 
