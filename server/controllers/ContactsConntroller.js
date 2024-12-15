@@ -102,6 +102,7 @@ export const getAllContacts = async (request, response, next) => {
 
     const contacts = users.map((user) => ({
       label: user.firstName ? `${user.firstName} ${user.lastName}` : user.email,
+      value:user._id,
     }));
 
     return response.status(200).json({ contacts });
@@ -110,3 +111,4 @@ export const getAllContacts = async (request, response, next) => {
     return response.status(500).send("Internal Server Error");
   }
 };
+ 
