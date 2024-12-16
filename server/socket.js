@@ -1,5 +1,6 @@
 import { Server as SocketIoServer } from "socket.io";
 import Message from "./models/MessagesModel.js";
+import Channel from "./models/ChannelModel.js";
 
 const setupSocket = (server) => {
   const io = new SocketIoServer(server, {
@@ -22,9 +23,10 @@ const setupSocket = (server) => {
     }
   };
 
-  const sendMessage = async (message, callback) => {
+  const sendMessage = async (message) => {
     try {
-      console.log("Message received on server:", message);
+   //   console.log("Message received on server:", message);
+   //   console.log(message.sender);
       const senderSocketId = userSocketMap.get(message.sender);
       const recipientSocketId = userSocketMap.get(message.recipient);
     //  console.log(senderSocketId,"senderSocketId");
@@ -48,24 +50,74 @@ const setupSocket = (server) => {
       }
 
       // Send acknowledgment back to the sender
-      if (callback) callback({ status: "success", message: "Message sent." });
-    } catch (error) {
-      console.error("Error handling sendMessage:", error);
-      if (callback) callback({ status: "error", message: "Message sending failed." });
+      
+   //   if (callback) callback({ status: "success", message: "Message sent." });
     }
+       catch (error) {
+      console.error("Error handling sendMessage:", error);
+   //   if (callback) callback({ status: "error", message: "Message sending failed." });
+    }
+      
   };
+
+  const sendChannelMessage = async (message) => {
+    const { channelId, sender, content, messageType, fileUrl } = message;
+  
+    const createdMessage = await Message.create({
+      sender,
+      recipient: null,
+      content,
+      messageType,
+      timestamp: new Date(),
+      fileUrl,
+    });
+  
+    const messageData = await Message.findById(createdMessage._id)
+      .populate("sender", "id email firstName lastName image color")
+      .exec();
+  
+    await Channel.findByIdAndUpdate(channelId, {
+      $push: { messages: createdMessage._id },
+    });
+  
+    const channel = await Channel.findById(channelId).populate("members");
+  
+    const finalData = { ...messageData._doc, channelId: channel._id };
+
+    if (channel && channel.members) {
+      channel.members.forEach((member) => {
+        const memberSocketId = userSocketMap.get(member._id.toString());
+        if (memberSocketId) {
+          io.to(memberSocketId).emit("recieve-channel-message", finalData);
+        }
+        
+      });
+      const adminSocketId = userSocketMap.get(channel.admin._id?.toString());
+    //  console.log("userSocketMap:", userSocketMap);
+  //    console.log("Looking for Admin Socket:", channel.admin._id?.toString());
+ 
+      console.log(finalData);
+        if (adminSocketId) {
+          console.log("hhhhhmmmm");
+          io.to(adminSocketId).emit("recieve-channel-message", finalData);
+        };
+    }
+    
+  };
+  
 
   io.on("connection", (socket) => {
     const userId = socket.handshake.query.userId;
     if (userId) {
       userSocketMap.set(userId, socket.id);
-    //  console.log(`User connected: ${userId} with socket ID: ${socket.id}`);
+ //    console.log(`User connected: ${userId} with socket ID: ${socket.id}`);
     } else {
-    //  console.log("User ID not provided during connection");
+  //    console.log("User ID not provided during connection");
     }
 
     // Pass the data and acknowledgment callback to the sendMessage handler
-    socket.on("sendMessage", (message, callback) => sendMessage(message, callback));
+    socket.on("sendMessage", (message) => sendMessage(message));
+    socket.on("send-channel-message",sendChannelMessage);
     socket.on("disconnect", () => disconnect(socket));
   });
 };

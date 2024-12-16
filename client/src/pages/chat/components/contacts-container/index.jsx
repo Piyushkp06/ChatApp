@@ -2,14 +2,14 @@ import React, { useEffect } from 'react'
 import ProfileInfo from './components/profile-info';
 import NewDm from './components/new-dm';
 import apiClient from '@/lib/api-client';
-import { GET_DM_CONTACTS_ROUTES } from '@/utils/constants';
+import { GET_DM_CONTACTS_ROUTES, GET_USER_CHANNELS_ROUTE } from '@/utils/constants';
 import { useAppStore } from '@/store';
 import ContactList from '@/components/contact-list';
 import CreateChannel from './components/create-channel';
 
 function ContactsContainer() {
 
-const{setDirectMessagesContacts,directMessagesContacts,channels}=useAppStore();
+const{setDirectMessagesContacts,directMessagesContacts,channels,setChannels}=useAppStore();
 
   useEffect(()=>{
     const getContacts=  async() =>{
@@ -20,8 +20,19 @@ const{setDirectMessagesContacts,directMessagesContacts,channels}=useAppStore();
      setDirectMessagesContacts(response.data.contacts);
       }
     };
+    const getChannels=  async() =>{
+      const response = await apiClient.get(GET_USER_CHANNELS_ROUTE ,{
+        withCredentials:true,
+      });
+      if(response.data.channels){
+        
+     setChannels(response.data.channels);
+     console.log(response.data.channels);
+      }
+    };
+    getChannels();
     getContacts();
-  })
+  },[setChannels,setDirectMessagesContacts])
   return (
     <div className="relative md:w-[35vw] lg:w-[30vw] xl:w-[20vw] bg-[#1b1c24] border-r-2 border-[#2f303b] w-full">
         <div className="pt-3">

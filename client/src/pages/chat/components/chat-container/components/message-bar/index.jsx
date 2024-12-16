@@ -42,14 +42,6 @@ function MessageBar() {
 
    const handleSendMessage = async () => {
     if (selectedChatType === "contact" && message.trim()) {
-  //    console.log("Sending message:", { message });
-  //    console.log("Socket instance:", socket);
-if (socket?.connected) {
-  //console.log("Socket is connected");
-} else {
- // console.error("Socket is not connected");
-}
-
       socket.emit(
         "sendMessage",
         {
@@ -59,18 +51,19 @@ if (socket?.connected) {
           messageType: "text",
           fileUrl: undefined,
         },
-        (response) => {
-          if (response.status === "success") {
-            console.log("Message sent successfully:", response.message);
-          } else {
-            console.error("Message sending failed:", response.message);
-          }
-        }
-      );
-      
-      
-    setMessage("");
+      );   
     }
+    else if (selectedChatType === "channel") {
+      socket.emit("send-channel-message", {
+        sender: userInfo?.id,
+        content: message,
+        messageType: "text",
+        fileUrl: undefined,
+        channelId: selectedChatData._id,
+      });
+    }
+    setMessage("");
+    
   }
 
   const handleAttachmentClick=()=>{
@@ -107,6 +100,15 @@ if (socket?.connected) {
                 messageType: "file",
                 fileUrl: response.data.filePath,
               });
+          }
+          else if(selectedChatType==="channel"){
+            socket.emit("send-channel-message", {
+              sender: userInfo.id,
+              content: message,
+              messageType: "file",
+              fileUrl: response.data.filePath,
+              channelId: selectedChatData._id,
+            });
           }
     
         }

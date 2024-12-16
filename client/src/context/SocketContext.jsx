@@ -40,6 +40,18 @@ export const SocketProvider = ({ children }) => {
           }
         });
 
+        socket.current.on("recieve-channel-message",(message)=>{
+          const { selectedChatData, selectedChatType, addMessage } = useAppStore.getState();
+
+      if (
+        selectedChatType !== undefined &&
+        selectedChatData._id === message.channelId
+      ) {
+     
+        addMessage(message);
+      }
+        })
+
      /*   socket.current.on("disconnect", () => {
           console.log("Disconnected from socket server");
         });*/
