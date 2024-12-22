@@ -98,7 +98,7 @@ const setupSocket = (server) => {
  
       console.log(finalData);
         if (adminSocketId) {
-          console.log("hhhhhmmmm");
+    //      console.log("hhhhhmmmm");
           io.to(adminSocketId).emit("recieve-channel-message", finalData);
         };
     }
