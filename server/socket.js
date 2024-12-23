@@ -62,7 +62,7 @@ const setupSocket = (server) => {
 
   const sendChannelMessage = async (message) => {
     const { channelId, sender, content, messageType, fileUrl } = message;
-  
+     
     const createdMessage = await Message.create({
       sender,
       recipient: null,
@@ -70,6 +70,7 @@ const setupSocket = (server) => {
       messageType,
       timestamp: new Date(),
       fileUrl,
+      channelId,
     });
   
     const messageData = await Message.findById(createdMessage._id)
@@ -82,7 +83,7 @@ const setupSocket = (server) => {
   
     const channel = await Channel.findById(channelId).populate("members");
   
-    const finalData = { ...messageData._doc, channelId: channel._id };
+    const finalData = messageData._doc;
 
     if (channel && channel.members) {
       channel.members.forEach((member) => {
@@ -117,7 +118,7 @@ const setupSocket = (server) => {
 
     // Pass the data and acknowledgment callback to the sendMessage handler
     socket.on("sendMessage", (message) => sendMessage(message));
-    socket.on("send-channel-message",sendChannelMessage);
+    socket.on("send-channel-message",(message)=>sendChannelMessage(message));
     socket.on("disconnect", () => disconnect(socket));
   });
 };

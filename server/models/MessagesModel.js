@@ -28,6 +28,11 @@ fileUrl:{
         return this.messageType === "file";
     },
 },
+channelId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Channel", 
+    default: null 
+    },
 timestamp:{
     type:Date,
     default:Date.now,

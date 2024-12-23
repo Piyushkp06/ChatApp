@@ -47,7 +47,9 @@ useEffect(()=>{
       {withCredentials:true}
     );
     if(response.data.messages){
+      console.log(response.data.messages);
         setSelectedChatMessages(response.data.messages)
+        
     }
    } catch (error) {
     console.log({error});
@@ -110,6 +112,7 @@ useEffect(()=>{
         );
       } else if (selectedChatType === "channel") {
         // For Channel Messages
+        console.log("Message Channel ID:", message.channelId, "Selected Channel ID:", selectedChatData._id);
         return message.channelId === selectedChatData._id; // Ensure the message belongs to the current channel
       }
       return false; // Exclude messages for unsupported chat types
