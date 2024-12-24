@@ -14,7 +14,7 @@ export const SocketProvider = ({ children }) => {
   const userInfo = useAppStore(); // Access user info from the store
 
   useEffect(() => {
-    console.log("userInfo:", userInfo);
+ //   console.log("userInfo:", userInfo);
 
     if (userInfo && userInfo?.userInfo?.id) {
       // Prevent multiple socket connections
@@ -25,7 +25,7 @@ export const SocketProvider = ({ children }) => {
         });
 
         socket.current.on("connect", () => {
-          console.log("Connected to socket server");
+      //    console.log("Connected to socket server");
         });
 
         socket.current.on("receiveMessage", (message) => {

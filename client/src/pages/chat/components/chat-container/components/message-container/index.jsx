@@ -7,7 +7,7 @@ import {MdFolderZip } from "react-icons/md";
 import {IoMdArrowRoundDown} from "react-icons/io"
 import { useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
-import { AvatarFallback } from "@radix-ui/react-avatar";
+import { AvatarFallback,Avatar,AvatarImage } from "@radix-ui/react-avatar";
 import { getColor } from "@/lib/utils";
 
 function MessageContainer() {
@@ -47,7 +47,7 @@ useEffect(()=>{
       {withCredentials:true}
     );
     if(response.data.messages){
-      console.log(response.data.messages);
+ //     console.log(response.data.messages);
         setSelectedChatMessages(response.data.messages)
         
     }
@@ -112,7 +112,7 @@ useEffect(()=>{
         );
       } else if (selectedChatType === "channel") {
         // For Channel Messages
-        console.log("Message Channel ID:", message.channelId, "Selected Channel ID:", selectedChatData._id);
+      //  console.log("Message Channel ID:", message.channelId, "Selected Channel ID:", selectedChatData._id);
         return message.channelId === selectedChatData._id; // Ensure the message belongs to the current channel
       }
       return false; // Exclude messages for unsupported chat types

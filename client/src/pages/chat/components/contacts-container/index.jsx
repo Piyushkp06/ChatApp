@@ -27,7 +27,7 @@ const{setDirectMessagesContacts,directMessagesContacts,channels,setChannels}=use
       if(response.data.channels){
         
      setChannels(response.data.channels);
-     console.log(response.data.channels);
+  //   console.log(response.data.channels);
       }
     };
     getChannels();
@@ -49,7 +49,7 @@ const{setDirectMessagesContacts,directMessagesContacts,channels,setChannels}=use
         </div>
         <div className="my-5">
             <div className="flex items-center justify-between pr-10">
-                <Title text="Channels"/>
+                <Title text="Groups"/>
                 <CreateChannel/>
             </div>
             <div className="max-h-[38vh] overflow-y-auto scrollbar-hidden">
