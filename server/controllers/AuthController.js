@@ -19,12 +19,13 @@ export const signup= async(request,response,next)=>{
         const user = await User.create({email, password});
 
         response.cookie("jwt",createToken(email,user._id),{
-            maxAge:maxAge,
+            maxAge:3*24*60*60*1000,
             secure:true,
             httpOnly:true,
             sameSite:"None",
 
         });
+        console.log(response.cookie);
         return response.status(201).json({
             user:{
                 id:user._id,
@@ -59,12 +60,13 @@ export const login= async(request,response,next)=>{
         }
 
         response.cookie("jwt",createToken(email,user._id),{
-            maxAge,
+            maxAge:3*24*60*60*1000,
             httpOnly:true,
             secure:true,
             sameSite:"None",
 
         });
+        console.log(response.cookie);
         return response.status(200).json({
             user:{
              id:user._id,
