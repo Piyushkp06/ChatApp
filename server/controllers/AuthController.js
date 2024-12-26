@@ -7,6 +7,12 @@ import {renameSync,unlinkSync} from "fs"
 
 const maxAge=3*24*60*60*1000;
 
+
+const validateEmail = (email) => {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+};
+
 const createToken=(email,userId)=>{
     return jwt.sign({email,userId},process.env.JWT_KEY,{expiresIn:maxAge});
 }
@@ -16,6 +22,11 @@ export const signup= async(request,response,next)=>{
         if(!email || !password){
             throw new ApiError(400,"Email and Password are required");
         }
+
+    if (!validateEmail(email)) {
+        throw new ApiError(400,"Email is not valid");
+    }
+
         const user = await User.create({email, password});
 
         response.cookie("jwt",createToken(email,user._id),{
@@ -47,6 +58,9 @@ export const login= async(request,response,next)=>{
         const {email,password}=request.body;
         if(!email || !password){
             throw new ApiError(400,"Email and Password are required");
+        }
+        if (!validateEmail(email)) {
+            throw new ApiError(400,"Email is not valid");
         }
         const user = await User.findOne({email});
 
