@@ -48,24 +48,27 @@ function ChatHeader() {
           </div>
         </div>
         {selectedChatType === 'channel' && (
-          <div className="text-neutral-400 text-sm flex items-center gap-2">
-            <span className="font-semibold">Members:</span>
-            {selectedChatData.members?.length > 0 ? (
-              <ul className="flex gap-1">
-                {selectedChatData.members.map((member, index) => (
-                  <li key={index} className="text-white">
-                    {member.firstName
-                      ? `${member.firstName} ${member.lastName || ''}`
-                      : member.email}
-                    {index !== selectedChatData.members.length - 1 && ','}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <span className="italic">No members found</span>
-            )}
-          </div>
-        )}
+  <div className="text-neutral-400 text-sm flex items-center gap-2">
+    <span className="font-semibold">Members:</span>
+
+    {selectedChatData.members?.length > 0 ? (
+      <div className="flex gap-1">
+        <div className="text-indigo-100">
+          {selectedChatData.members.map((member) =>
+              member.firstName
+                ? `${member.firstName} ${member.lastName || ''}`
+                : member.email
+            )
+            .join(', ')
+        }
+        </div>
+      </div>
+    ) : (
+      <span className="italic">No members found</span>
+    )}
+  </div> 
+)}
+
         <div className="flex items-center justify-center gap-5">
           <button
             className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all"
