@@ -8,7 +8,6 @@ export const getMessages = async (request, response, next) => {
   if (!user1 || !user2) {
     return response.status(400).send("Both user ID's are required.");
   }
-
   try {
     const messages = await Message.find({
       $or: [

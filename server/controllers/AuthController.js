@@ -63,7 +63,7 @@ export const login= async(request,response,next)=>{
             throw new ApiError(400,"Email is not valid");
         }
         const user = await User.findOne({email});
-
+         console.log(user._id);
         if(!user){
          throw new ApiError(400,"User with the given email not found");
         }
