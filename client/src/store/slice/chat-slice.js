@@ -27,23 +27,35 @@ export const createChatSlice=(set,get)=>({
         selectedChatType:undefined,
         selectedChatMessages:[],
     }),
-    addMessage:(message)=>{
-        const selectedChatType = get().selectedChatType;
-        const selectedChatMessages = get().selectedChatMessages;
-     //  console.log("Before adding:", selectedChatMessages);
-      
-        const updatedMessages = [
-          ...selectedChatMessages,
-          {
-            ...message,
-            recipient: selectedChatType === "channel" ? message.recipient : message.recipient?._id,
-            sender: selectedChatType === "channel" ? message.sender : message.sender?._id,
-          },
-        ];
-      
-      //  console.log("After adding:", updatedMessages);
-        set({ selectedChatMessages: updatedMessages });
+    addMessage: (message) => {
+      const selectedChatType = get().selectedChatType;
+      const selectedChatMessages = get().selectedChatMessages;
+    
+      console.log("Before adding:", selectedChatMessages);
+    
+      // Normalize `sender` and `recipient` fields
+      const normalizedMessage = {
+        ...message,
+        recipient:
+          selectedChatType === "channel"
+            ? message.recipient
+            : typeof message.recipient === "object" && message.recipient?._id
+            ? message.recipient._id
+            : message.recipient,
+        sender:
+          selectedChatType === "channel"
+            ? message.sender
+            : typeof message.sender === "object" && message.sender?._id
+            ? message.sender._id
+            : message.sender,
+      };
+    
+      const updatedMessages = [...selectedChatMessages, normalizedMessage];
+    
+      console.log("After adding:", updatedMessages);
+      set({ selectedChatMessages: updatedMessages });
     },
+    
 
     addChannelInChannelList: (message) => {
       const channels = get().channels;
