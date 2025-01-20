@@ -1,6 +1,4 @@
-Here’s the final `README.md` content, fully formatted and ready for copy-paste into your file:
 
-```markdown
 # 💬 Real-Time Chat Application 🚀
 
 Welcome to the **Real-Time Chat Application**! 🌐 This app enables **instant messaging** 📨 with modern features like user authentication 🔐, real-time updates ⚡, and secure file uploads 🖼️. Built with **Node.js** and a variety of powerful tools, this project is perfect for learning or building scalable communication systems! 🙌
