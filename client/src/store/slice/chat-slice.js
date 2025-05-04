@@ -31,7 +31,7 @@ export const createChatSlice=(set,get)=>({
       const selectedChatType = get().selectedChatType;
       const selectedChatMessages = get().selectedChatMessages;
     
-      console.log("Before adding:", selectedChatMessages);
+   //   console.log("Before adding:", selectedChatMessages);
     
       // Normalize `sender` and `recipient` fields
       const normalizedMessage = {
@@ -52,7 +52,7 @@ export const createChatSlice=(set,get)=>({
     
       const updatedMessages = [...selectedChatMessages, normalizedMessage];
     
-      console.log("After adding:", updatedMessages);
+    //  console.log("After adding:", updatedMessages);
       set({ selectedChatMessages: updatedMessages });
     },
     
