@@ -1,6 +1,10 @@
 import { Server as SocketIoServer } from "socket.io";
 import Message from "./models/MessagesModel.js";
 import Channel from "./models/ChannelModel.js";
+import queueService from "./services/queueService.js";
+
+export const userSocketMap = new Map();
+let ioInstance = null;
 
 const setupSocket = (server) => {
   const io = new SocketIoServer(server, {
@@ -11,7 +15,7 @@ const setupSocket = (server) => {
     },
   });
 
-  const userSocketMap = new Map();
+  ioInstance = io;
 
   const disconnect = (socket) => {
     //console.log(`Client Disconnected: ${socket.id}`);
@@ -43,6 +47,16 @@ const setupSocket = (server) => {
       if (recipientSocketId) {
         io.to(recipientSocketId).emit("receiveMessage", messageData);
       //  console.log("reci",messageData);
+      } else {
+        // Recipient is offline - queue notification
+        await queueService.queueNotification({
+          type: 'message',
+          senderId: message.sender,
+          senderName: messageData.sender?.firstName || messageData.sender?.email,
+          recipientId: message.recipient,
+          content: message.content,
+          messageType: message.messageType
+        });
       }
       if (senderSocketId) {
         io.to(senderSocketId).emit("receiveMessage", messageData);
@@ -86,12 +100,23 @@ const setupSocket = (server) => {
     const finalData = messageData._doc;
 
     if (channel && channel.members) {
-      channel.members.forEach((member) => {
+      channel.members.forEach(async (member) => {
         const memberSocketId = userSocketMap.get(member._id.toString());
         if (memberSocketId) {
           io.to(memberSocketId).emit("recieve-channel-message", finalData);
+        } else if (member._id.toString() !== sender) {
+          // Member is offline - queue notification
+          await queueService.queueNotification({
+            type: 'channel-message',
+            senderId: sender,
+            senderName: messageData.sender?.firstName || messageData.sender?.email,
+            recipientId: member._id.toString(),
+            content,
+            messageType,
+            channelId,
+            channelName: channel.name
+          });
         }
-        
       });
       const adminSocketId = userSocketMap.get(channel.admin._id?.toString());
     //  console.log("userSocketMap:", userSocketMap);
@@ -101,7 +126,19 @@ const setupSocket = (server) => {
         if (adminSocketId) {
     //      console.log("hhhhhmmmm");
           io.to(adminSocketId).emit("recieve-channel-message", finalData);
-        };
+        } else if (channel.admin._id?.toString() !== sender) {
+          // Admin is offline - queue notification
+          await queueService.queueNotification({
+            type: 'channel-message',
+            senderId: sender,
+            senderName: messageData.sender?.firstName || messageData.sender?.email,
+            recipientId: channel.admin._id?.toString(),
+            content,
+            messageType,
+            channelId,
+            channelName: channel.name
+          });
+        }
     }
     
   };
@@ -121,6 +158,9 @@ const setupSocket = (server) => {
     socket.on("send-channel-message",(message)=>sendChannelMessage(message));
     socket.on("disconnect", () => disconnect(socket));
   });
+
+  return io;
 };
 
+export const getIO = () => ioInstance;
 export default setupSocket;
