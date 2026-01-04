@@ -9,6 +9,7 @@ import setupSocket from "./socket.js"
 import messagesRoutes from "./routes/MessagesRoutes.js"
 import channelRoutes from "./routes/ChannelRoutes.js"
 import aiRoutes from "./routes/AIRoutes.js"
+import redis from "./config/redis.js"
 
 dotenv.config();
 
@@ -49,5 +50,10 @@ mongoose
 .then(()=>console.log('DB Connected Successfully'))
 .catch(err=>console.log(err.message));
 
-
-
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🔄 Shutting down gracefully...');
+  await redis.quit();
+  await mongoose.connection.close();
+  process.exit(0);
+});

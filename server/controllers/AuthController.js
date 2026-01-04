@@ -1,6 +1,7 @@
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse} from "../utils/ApiResponse.js";
 import User from "../models/UserModel.js"
+import cacheService from "../services/cacheService.js";
 import jwt from "jsonwebtoken"
 import { compare } from "bcrypt";
 import {renameSync,unlinkSync} from "fs"
@@ -23,29 +24,41 @@ export const signup= async(request,response,next)=>{
             throw new ApiError(400,"Email and Password are required");
         }
 
-    if (!validateEmail(email)) {
-        throw new ApiError(400,"Email is not valid");
-    }
+        if (!validateEmail(email)) {
+            throw new ApiError(400,"Email is not valid");
+        }
+
+        // Rate limiting
+        const canProceed = await cacheService.checkRateLimit(`signup:${email}`, 3, 3600);
+        if (!canProceed) {
+            throw new ApiError(429, "Too many signup attempts. Try again later.");
+        }
 
         const user = await User.create({email, password});
+        const token = createToken(email, user._id);
 
-        response.cookie("jwt",createToken(email,user._id),{
+        // Cache session and user
+        await cacheService.setSession(user._id.toString(), token);
+        await cacheService.setUser(user._id.toString(), {
+            id: user._id,
+            email: user.email,
+            profileSetup: user.profileSetup
+        });
+
+        response.cookie("jwt", token, {
             maxAge:3*24*60*60*1000,
             secure:true,
             httpOnly:true,
             sameSite:"None",
-
         });
         console.log(response.cookie);
         return response.status(201).json({
             user:{
                 id:user._id,
                 email:user.email,
-             profileSetup:user.profileSetup 
+                profileSetup:user.profileSetup 
             },
         });
-
-        
     }
     catch(error){
         console.log({error});
@@ -62,10 +75,17 @@ export const login= async(request,response,next)=>{
         if (!validateEmail(email)) {
             throw new ApiError(400,"Email is not valid");
         }
+
+        // Rate limiting
+        const canProceed = await cacheService.checkRateLimit(`login:${email}`, 5, 900);
+        if (!canProceed) {
+            throw new ApiError(429, "Too many login attempts. Try again later.");
+        }
+
         const user = await User.findOne({email});
-         console.log(user._id);
+        console.log(user._id);
         if(!user){
-         throw new ApiError(400,"User with the given email not found");
+            throw new ApiError(400,"User with the given email not found");
         }
 
         const auth=await compare(password,user.password);
@@ -73,27 +93,39 @@ export const login= async(request,response,next)=>{
             throw new ApiError(400,"Password is incorrect");
         }
 
-        response.cookie("jwt",createToken(email,user._id),{
+        const token = createToken(email, user._id);
+
+        // Cache session and user, set online
+        await cacheService.setSession(user._id.toString(), token);
+        await cacheService.setOnline(user._id.toString());
+        await cacheService.setUser(user._id.toString(), {
+            id: user._id,
+            email: user.email,
+            profileSetup: user.profileSetup,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            image: user.image,
+            color: user.color,
+        });
+
+        response.cookie("jwt", token, {
             maxAge:3*24*60*60*1000,
             httpOnly:true,
             secure:true,
             sameSite:"None",
-
         });
         console.log(response.cookie);
         return response.status(200).json({
             user:{
-             id:user._id,
-             email:user.email,
-             profileSetup:user.profileSetup ,
-             firstName:user.firstName,
-             lastName:user.lastName,
-             image:user.image,
-             color:user.color,
+                id:user._id,
+                email:user.email,
+                profileSetup:user.profileSetup,
+                firstName:user.firstName,
+                lastName:user.lastName,
+                image:user.image,
+                color:user.color,
             },
         });
-
-        
     }
     catch(error){
         console.log({error});
@@ -103,22 +135,32 @@ export const login= async(request,response,next)=>{
 
 export const getUserInfo= async(request,response,next)=>{
     try{
-       const userData=await User.findById(request.userId);
-       if(!userData){
-        throw new ApiError(404,"User with given id not found");
-       }
+        // Check cache first
+        const cached = await cacheService.getUser(request.userId);
+        if (cached) {
+            console.log('✅ Cache hit: user');
+            return response.status(200).json(cached);
+        }
+
+        const userData=await User.findById(request.userId);
+        if(!userData){
+            throw new ApiError(404,"User with given id not found");
+        }
+
+        const userResponse = {
+            id:userData._id,
+            email:userData.email,
+            profileSetup:userData.profileSetup,
+            firstName:userData.firstName,
+            lastName:userData.lastName,
+            image:userData.image,
+            color:userData.color,
+        };
+
+        // Cache user
+        await cacheService.setUser(request.userId, userResponse);
   
-        return response.status(200).json({
-       
-             id:userData._id,
-             email:userData.email,
-             profileSetup:userData.profileSetup ,
-             firstName:userData.firstName,
-             lastName:userData.lastName,
-             image:userData.image,
-             color:userData.color,
-          
-        });            
+        return response.status(200).json(userResponse);            
     }
     catch(error){
         console.log({error});
@@ -128,31 +170,35 @@ export const getUserInfo= async(request,response,next)=>{
 
 export const updateProfile= async(request,response,next)=>{
     try{
-       const {userId}=request;
-       const {firstName,lastName,color}=request.body;
-       if(!firstName || !lastName){
-        return response.status(404).send("Firstname,lastname and color is required")
-       }    
-       const userData =await User.findByIdAndUpdate(
-        userId,{
-            firstName,
-            lastName,
-            color,
-            profileSetup:true,
-        },
-        {new:true,runValidators:true}
-       );
-        return response.status(200).json({
-       
-             id:userData._id,
-             email:userData.email,
-             profileSetup:userData.profileSetup ,
-             firstName:userData.firstName,
-             lastName:userData.lastName,
-             image:userData.image,
-             color:userData.color,
-          
-        });            
+        const {userId}=request;
+        const {firstName,lastName,color}=request.body;
+        if(!firstName || !lastName){
+            return response.status(404).send("Firstname,lastname and color is required")
+        }    
+        const userData =await User.findByIdAndUpdate(
+            userId,{
+                firstName,
+                lastName,
+                color,
+                profileSetup:true,
+            },
+            {new:true,runValidators:true}
+        );
+
+        const userResponse = {
+            id:userData._id,
+            email:userData.email,
+            profileSetup:userData.profileSetup,
+            firstName:userData.firstName,
+            lastName:userData.lastName,
+            image:userData.image,
+            color:userData.color,
+        };
+
+        // Update cache
+        await cacheService.setUser(userId, userResponse);
+
+        return response.status(200).json(userResponse);            
     }
     catch(error){
         console.log({error});
@@ -162,24 +208,27 @@ export const updateProfile= async(request,response,next)=>{
 
 export const addProfileImage= async(request,response,next)=>{
     try{
-       if(!request.file){
-        throw new ApiError(400,"File is required");
-       }
-       const date=Date.now();
-       let fileName="uploads/profiles/"+date+request.file.originalname;
-       renameSync(request.file.path,fileName);
+        if(!request.file){
+            throw new ApiError(400,"File is required");
+        }
+        const date=Date.now();
+        let fileName="uploads/profiles/"+date+request.file.originalname;
+        renameSync(request.file.path,fileName);
 
-       const updatedUser=await User.findByIdAndUpdate(
-        request.userId,
-        {image:fileName},
-        {new:true,runValidators:true}
-    );
+        const updatedUser=await User.findByIdAndUpdate(
+            request.userId,
+            {image:fileName},
+            {new:true,runValidators:true}
+        );
+
+        // Invalidate cache
+        await cacheService.deleteUser(request.userId);
 
         return response.status(200).json({
-        image:updatedUser.image,
+            image:updatedUser.image,
         });            
     }
-        catch(error){
+    catch(error){
         console.log({error});
         throw new ApiError(500,"Internal Server Error");
     }
@@ -187,21 +236,24 @@ export const addProfileImage= async(request,response,next)=>{
 
 export const removeProfileImage= async(request,response,next)=>{
     try{
-       const {userId}=request;
-       const user=await User.findById(userId);
-       if(!user){
-        throw new ApiError(404,"User not found.")
-       }
+        const {userId}=request;
+        const user=await User.findById(userId);
+        if(!user){
+            throw new ApiError(404,"User not found.")
+        }
 
-       if(user.image){
-        unlinkSync(user.image);
-      }
-      user.image=null;
-      await user.save();
+        if(user.image){
+            unlinkSync(user.image);
+        }
+        user.image=null;
+        await user.save();
+
+        // Invalidate cache
+        await cacheService.deleteUser(userId);
       
         return response.status(200).send("Profile Image Removed Successfully");    
     }
-        catch(error){
+    catch(error){
         console.log({error});
         throw new ApiError(500,"Internal Server Error");
     }
@@ -209,10 +261,14 @@ export const removeProfileImage= async(request,response,next)=>{
 
 export const Logout= async(request,response,next)=>{
     try{
-         response.cookie("jwt","",{maxAge:1,secure:true,sameSite:"None"})
+        // Clear session and set offline
+        await cacheService.setOffline(request.userId);
+        await cacheService.deleteSession(request.userId);
+
+        response.cookie("jwt","",{maxAge:1,secure:true,sameSite:"None"})
         return response.status(200).send("Logout Successfully");    
     }
-        catch(error){
+    catch(error){
         console.log({error});
         throw new ApiError(500,"Internal Server Error");
     }
