@@ -1,212 +1,318 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState, useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { useNavigate } from 'react-router-dom';
-import {IoArrowBack} from "react-icons/io5"
-import { Avatar } from '@/components/ui/avatar';
-import { AvatarImage } from '@radix-ui/react-avatar';
-import { colors, getColor } from '@/lib/utils';
-import { useState,useEffect } from 'react';
-import {FaPlus,FaTrash} from "react-icons/fa";
-import { Input } from '@/components/ui/input';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
-import { ADD_PROFILE_IMAGE_ROUTE, REMOVE_PROFILE_IMAGE_ROUTE, UPDATE_PROFILE_ROUTE } from '@/utils/constants';
-import { HOST } from '@/utils/constants';
-
+import { ADD_PROFILE_IMAGE_ROUTE, REMOVE_PROFILE_IMAGE_ROUTE, UPDATE_PROFILE_ROUTE, HOST } from '@/utils/constants';
+import { colors, getColor } from '@/lib/utils';
+import { ArrowLeft, Camera, Trash2, User, Mail, Sparkles, Check } from 'lucide-react';
 
 function Profile() {
-  const navigate= useNavigate();   
-  const {userInfo,setUserInfo}=useAppStore();
+  const navigate = useNavigate();
+  const { userInfo, setUserInfo } = useAppStore();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [image, setImage] = useState(null); 
+  const [image, setImage] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [selectedColor, setSelectedColor] = useState(0);
-  const fileInputRef=useRef(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const fileInputRef = useRef(null);
 
-  useEffect(()=>{
-if(userInfo.profileSetup){
-  setFirstName(userInfo.firstName);
-  setLastName(userInfo.lastName);
-  setSelectedColor(userInfo.color);
-}
-if(userInfo.image){
-  setImage(`${HOST}/${userInfo.image}`);
-}
-  },[userInfo]);
-  const validatePofile=()=>{
-    if(!firstName){
-      toast.error("First Name is required.")
-      return false
+  useEffect(() => {
+    if (userInfo.profileSetup) {
+      setFirstName(userInfo.firstName);
+      setLastName(userInfo.lastName);
+      setSelectedColor(userInfo.color);
     }
-    if(!lastName){
-      toast.error("Last Name is required.")
-      return false
+    if (userInfo.image) {
+      setImage(`${HOST}/${userInfo.image}`);
+    }
+  }, [userInfo]);
+
+  const validateProfile = () => {
+    if (!firstName.trim()) {
+      toast.error("First name is required");
+      return false;
+    }
+    if (!lastName.trim()) {
+      toast.error("Last name is required");
+      return false;
     }
     return true;
   };
-  const saveChanges = async()=>{
-     if(validatePofile()){
+
+  const saveChanges = async () => {
+    if (validateProfile()) {
+      setIsLoading(true);
       try {
-        const response=await apiClient.post(
+        const response = await apiClient.post(
           UPDATE_PROFILE_ROUTE,
-          {firstName,lastName,color:selectedColor},
-          {withCredentials:true}
+          { firstName, lastName, color: selectedColor },
+          { withCredentials: true }
         );
-        if(response.status==200 && response.data){
-          setUserInfo({...response.data});
-          toast.success("Profile updated Successfully");
+        if (response.status === 200 && response.data) {
+          setUserInfo({ ...response.data });
+          toast.success("Profile updated successfully!");
           navigate("/chat");
         }
       } catch (error) {
         console.log(error);
+        toast.error("Failed to update profile");
+      } finally {
+        setIsLoading(false);
       }
-     }
-  } ;
-  const handleNavigate=()=>{
-    if(userInfo.profileSetup){
-      navigate("/chat");
-    }else {
-      toast.error("Please setup profile.");
     }
-  }
-  const handleFileInputClick=()=>{
-  fileInputRef.current.click();
   };
-  const handleImageChange=async(event)=>{
-     const file=event.target.files[0];
-     console.log({file});
-     if(file){
-      const formData=new FormData();
-      formData.append("profile-image",file);
-      const response = await apiClient.post(ADD_PROFILE_IMAGE_ROUTE,formData,{withCredentials:true});
-      if(response.status==200 && response.data.image){
-        setUserInfo({...userInfo,image:response.data.image});
-        toast.success("Image updated successfully");
+
+  const handleNavigate = () => {
+    if (userInfo.profileSetup) {
+      navigate("/chat");
+    } else {
+      toast.error("Please complete your profile setup");
+    }
+  };
+
+  const handleFileInputClick = () => {
+    fileInputRef.current.click();
+  };
+
+  const handleImageChange = async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      const formData = new FormData();
+      formData.append("profile-image", file);
+      try {
+        const response = await apiClient.post(ADD_PROFILE_IMAGE_ROUTE, formData, { withCredentials: true });
+        if (response.status === 200 && response.data.image) {
+          setUserInfo({ ...userInfo, image: response.data.image });
+          toast.success("Profile photo updated!");
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+          setImage(reader.result);
+        };
+        reader.readAsDataURL(file);
+      } catch (error) {
+        toast.error("Failed to upload image");
       }
-      const reader=new FileReader();
-      reader.onload=()=>{
-        setImage(reader.result);
-      };
-      reader.readAsDataURL(file);
-     }
+    }
   };
-  const handleDeleteImage=async()=>{
+
+  const handleDeleteImage = async () => {
     try {
-      const response=await apiClient.delete(REMOVE_PROFILE_IMAGE_ROUTE,{
-        withCredentials:true,
+      const response = await apiClient.delete(REMOVE_PROFILE_IMAGE_ROUTE, {
+        withCredentials: true,
       });
-      if(response.status===200){
-        setUserInfo({...userInfo,image:null});
-        toast.success("Image removed successfully");
+      if (response.status === 200) {
+        setUserInfo({ ...userInfo, image: null });
+        toast.success("Profile photo removed");
         setImage(null);
       }
     } catch (error) {
       console.log(error);
+      toast.error("Failed to remove image");
     }
   };
+
   return (
-    <div className="bg-[#1b1c24] h-[100vh] flex items-center justify-center flex-col gap-10">
-     <div className="flex flex-col gap-10 w-[80vw] md:w-max"> 
-      <div onClick={handleNavigate}>
-      <IoArrowBack className="text-4xl lg:text-6xl text-white/90 cursor-pointer" />
-      </div> 
-          <div className="grid grid-cols-2">
-        <div className="h-full w-32 md:w-48 md:h-48 relative flex items-center justify-center"
-        onMouseEnter={()=>setHovered(true)}
-        onMouseLeave={()=>setHovered(false)}
-        
+    <div className="min-h-screen w-full dark bg-[#0a0a0f] flex items-center justify-center p-6 overflow-hidden">
+      {/* Animated Background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute bottom-0 -left-40 w-96 h-96 bg-violet-600/15 rounded-full blur-[120px] animate-pulse delay-1000" />
+      </div>
 
+      <div className="w-full max-w-2xl relative z-10 animate-fade-in">
+        {/* Back Button */}
+        <button
+          onClick={handleNavigate}
+          className="flex items-center gap-2 text-gray-400 hover:text-white mb-8 transition-colors group"
         >
-          <Avatar className="h-32 w-32 md:w-48 md:h-48 rounded-full overflow-hidden">
-            {
-              image ? (
-              <AvatarImage 
-              src={image}
-              alt="profile"
-              className="object-cover w-full h-full bg-black"
-              /> 
-              ) : (
-              <div className={`uppercase h-32 w-32 md:w-48 md:h-48 text-5xl border-[1px] flex items-center justify-center rounded-full ${getColor(selectedColor)}`}>
-                {firstName
-                 ?firstName.split("").shift()
-                 :userInfo.email.split("").shift()}
-              </div>
-             )}
-          </Avatar>
-          {
-            hovered && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/50 ring-fuchsia-50 rounded-full"
-              onClick={image?handleDeleteImage:handleFileInputClick}>
-                {
-              image?(
-              <FaTrash className="text-white text-3xl cursor-pointer"/>
-              ):
-              (
-              <FaPlus className="text-white text-3xl cursor-pointer"/>
-              )
-                }
+          <ArrowLeft className="h-5 w-5 group-hover:-translate-x-1 transition-transform" />
+          <span>{userInfo.profileSetup ? "Back to Chat" : "Setup Required"}</span>
+        </button>
 
+        <Card className="bg-[#12121a]/80 backdrop-blur-xl border-white/10 shadow-2xl">
+          <CardHeader className="text-center pb-2">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-white" />
               </div>
-            )
-          }
-         <input type="file"
-         ref={fileInputRef} 
-         className="hidden"
-         onChange={handleImageChange}
-          name="profile-image"
-           accept=".png, .jpg, .jpeg ,.svg ,.webp"
-            />
-        </div>
-        <div className="flex min-w-32 md:min-w-64 flex-col gap-5 text-white items-center justify-center">
-          <div className="w-full">
-            <Input 
-             placeholder="Email"
-             type="email"
-             disabled value={userInfo.email} 
-             className="rounded-lg p-6 bg-[#2c2e3b] border-none"/>    
-               </div>
-               <div className="w-full">
-            <Input 
-             placeholder="First Name"
-             type="text"
-             onChange={(e)=>setFirstName(e.target.value)}             
-             value={firstName} 
-             className="rounded-lg p-6 bg-[#2c2e3b] border-none"/>    
-               </div>
-               <div className="w-full">
-            <Input 
-             placeholder="Last Name"
-             onChange={(e)=>setLastName(e.target.value)}             
-             value={lastName}  
-             className="rounded-lg p-6 bg-[#2c2e3b] border-none"/>    
-               </div>
-               <div className="w-full flex gap-5">
-                {
-                  colors.map((color,index)=>
-                  <div className={`${color} h-8 w-8 rounded-full cursor-pointer transition-all duration-300
-                  ${selectedColor==index
-                    ?"outline outline-white/50 outline-1"
-                    :""
-                  }
+            </div>
+            <CardTitle className="text-2xl font-bold text-white">
+              {userInfo.profileSetup ? "Edit Profile" : "Complete Your Profile"}
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              {userInfo.profileSetup
+                ? "Update your personal information"
+                : "Add your details to get started with Syncronus"}
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-8">
+            {/* Avatar Section */}
+            <div className="flex justify-center">
+              <div
+                className="relative group"
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+              >
+                <Avatar className="h-32 w-32 rounded-2xl ring-4 ring-violet-500/20 transition-all group-hover:ring-violet-500/40">
+                  {image ? (
+                    <AvatarImage src={image} alt="profile" className="object-cover" />
+                  ) : (
+                    <AvatarFallback
+                      className={`${getColor(selectedColor)} text-4xl font-semibold rounded-2xl`}
+                    >
+                      {firstName ? firstName[0].toUpperCase() : userInfo.email[0].toUpperCase()}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+
+                {/* Hover Overlay */}
+                <div
+                  className={`
+                    absolute inset-0 rounded-2xl bg-black/60 flex items-center justify-center gap-3
+                    transition-opacity cursor-pointer
+                    ${hovered ? "opacity-100" : "opacity-0"}
                   `}
-                  key={index}
-                  onClick={()=>setSelectedColor(index)}
-                  ></div>)
-                }
-               </div>
-        </div>
-     </div>
-     <div className="w-full">
-      <Button className="h-16 w-full bg-purple-700 hover:bg-purple-900 transition-all duration-300"
-      onClick={saveChanges}
-      >
-        Save Changes</Button>
+                >
+                  {image ? (
+                    <>
+                      <button
+                        className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                        onClick={handleFileInputClick}
+                      >
+                        <Camera className="h-5 w-5 text-white" />
+                      </button>
+                      <button
+                        className="h-10 w-10 rounded-xl bg-red-500/20 flex items-center justify-center hover:bg-red-500/30 transition-colors"
+                        onClick={handleDeleteImage}
+                      >
+                        <Trash2 className="h-5 w-5 text-red-400" />
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors"
+                      onClick={handleFileInputClick}
+                    >
+                      <Camera className="h-5 w-5 text-white" />
+                    </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  className="hidden"
+                  onChange={handleImageChange}
+                  name="profile-image"
+                  accept=".png,.jpg,.jpeg,.svg,.webp"
+                />
+              </div>
+            </div>
+
+            <Separator className="bg-white/5" />
+
+            {/* Form Fields */}
+            <div className="space-y-4">
+              {/* Email (Read Only) */}
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 flex items-center gap-2">
+                  <Mail className="h-4 w-4" />
+                  Email
+                </label>
+                <Input
+                  type="email"
+                  disabled
+                  value={userInfo.email}
+                  className="h-12 bg-white/5 border-white/10 text-gray-400 rounded-xl"
+                />
+              </div>
+
+              {/* First Name */}
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  First Name
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter your first name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl"
+                />
+              </div>
+
+              {/* Last Name */}
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  Last Name
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Enter your last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl"
+                />
+              </div>
+            </div>
+
+            <Separator className="bg-white/5" />
+
+            {/* Color Selection */}
+            <div className="space-y-3">
+              <label className="text-sm text-gray-400">Choose your avatar color</label>
+              <div className="flex gap-3 flex-wrap">
+                {colors.map((color, index) => (
+                  <button
+                    key={index}
+                    className={`
+                      h-10 w-10 rounded-xl ${color} transition-all duration-200
+                      ${selectedColor === index
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-[#12121a] scale-110"
+                        : "hover:scale-105"
+                      }
+                    `}
+                    onClick={() => setSelectedColor(index)}
+                  >
+                    {selectedColor === index && (
+                      <Check className="h-5 w-5 text-white mx-auto" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Save Button */}
+            <Button
+              className="w-full h-12 gradient-primary hover:opacity-90 text-white font-semibold rounded-xl glow-sm transition-all duration-300"
+              onClick={saveChanges}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </div>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     </div>
-    </div>
-     </div>
-  )
+  );
 }
 
-export default Profile
+export default Profile;

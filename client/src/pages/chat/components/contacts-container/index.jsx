@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect } from 'react';
 import ProfileInfo from './components/profile-info';
 import NewDm from './components/new-dm';
 import apiClient from '@/lib/api-client';
@@ -6,101 +6,104 @@ import { GET_DM_CONTACTS_ROUTES, GET_USER_CHANNELS_ROUTE } from '@/utils/constan
 import { useAppStore } from '@/store';
 import ContactList from '@/components/contact-list';
 import CreateChannel from './components/create-channel';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { MessageCircle, Users, Sparkles } from 'lucide-react';
 
 function ContactsContainer() {
+  const { setDirectMessagesContacts, directMessagesContacts, channels, setChannels } = useAppStore();
 
-const{setDirectMessagesContacts,directMessagesContacts,channels,setChannels}=useAppStore();
-
-  useEffect(()=>{
-    const getContacts=  async() =>{
-      const response = await apiClient.get(GET_DM_CONTACTS_ROUTES,{
-        withCredentials:true,
+  useEffect(() => {
+    const getContacts = async () => {
+      const response = await apiClient.get(GET_DM_CONTACTS_ROUTES, {
+        withCredentials: true,
       });
-      if(response.data.contacts){
-     setDirectMessagesContacts(response.data.contacts);
+      if (response.data.contacts) {
+        setDirectMessagesContacts(response.data.contacts);
       }
     };
-    const getChannels=  async() =>{
-      const response = await apiClient.get(GET_USER_CHANNELS_ROUTE ,{
-        withCredentials:true,
+    
+    const getChannels = async () => {
+      const response = await apiClient.get(GET_USER_CHANNELS_ROUTE, {
+        withCredentials: true,
       });
-      if(response.data.channels){
-        
-     setChannels(response.data.channels);
-  //   console.log(response.data.channels);
+      if (response.data.channels) {
+        setChannels(response.data.channels);
       }
     };
+    
     getChannels();
     getContacts();
-  },[setChannels,setDirectMessagesContacts])
+  }, [setChannels, setDirectMessagesContacts]);
+
   return (
-    <div className="relative md:w-[35vw] lg:w-[30vw] xl:w-[20vw] bg-[#1b1c24] border-r-2 border-[#2f303b] w-full">
-        <div className="pt-3">
-            <Logo/>
+    <div className="relative w-full md:w-[320px] lg:w-[360px] xl:w-[380px] h-full flex flex-col bg-[#0d0d12]/95 backdrop-blur-xl border-r border-white/5">
+      {/* Header */}
+      <div className="p-5 pb-4">
+        <Logo />
+      </div>
+
+      <ScrollArea className="flex-1 px-3">
+        {/* Direct Messages Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between px-2 mb-3">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-4 w-4 text-violet-400" />
+              <Title text="Direct Messages" />
+            </div>
+            <NewDm />
+          </div>
+          <div className="space-y-1">
+            <ContactList contacts={directMessagesContacts} />
+          </div>
         </div>
-        <div className="my-5">
-            <div className="flex items-center justify-between pr-10">
-                <Title text="Direct Messages"/>
-                <NewDm/>
+
+        <Separator className="bg-white/5 my-4" />
+
+        {/* Channels Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between px-2 mb-3">
+            <div className="flex items-center gap-2">
+              <Users className="h-4 w-4 text-violet-400" />
+              <Title text="Channels" />
             </div>
-            <div className="max-h-[38vh] overflow-y-auto scrollbar-hidden">
-           <ContactList contacts={directMessagesContacts}/>
-            </div>
+            <CreateChannel />
+          </div>
+          <div className="space-y-1">
+            <ContactList contacts={channels} isChannel={true} />
+          </div>
         </div>
-        <div className="my-5">
-            <div className="flex items-center justify-between pr-10">
-                <Title text="Groups"/>
-                <CreateChannel/>
-            </div>
-            <div className="max-h-[38vh] overflow-y-auto scrollbar-hidden">
-           <ContactList contacts={channels} isChannel={true}/>
-            </div>
-        </div>
-        <ProfileInfo/>
+      </ScrollArea>
+
+      {/* Profile Info at Bottom */}
+      <div className="mt-auto">
+        <Separator className="bg-white/5" />
+        <ProfileInfo />
+      </div>
     </div>
-  )
+  );
 }
 
 export default ContactsContainer;
 
 export const Logo = () => {
-    return (
-      <div className="flex p-5  justify-start items-center gap-2">
-        <svg
-          id="logo-38"
-          width="78"
-          height="32"
-          viewBox="0 0 78 32"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {" "}
-          <path
-            d="M55.5 0H77.5L58.5 32H36.5L55.5 0Z"
-            className="ccustom"
-            fill="#8338ec"
-          ></path>{" "}
-          <path
-            d="M35.5 0H51.5L32.5 32H16.5L35.5 0Z"
-            className="ccompli1"
-            fill="#975aed"
-          ></path>{" "}
-          <path
-            d="M19.5 0H31.5L12.5 32H0.5L19.5 0Z"
-            className="ccompli2"
-            fill="#a16ee8"
-          ></path>{" "}
-        </svg>
-        <span className="text-3xl font-semibold ">Syncronus</span>
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center glow-sm">
+        <Sparkles className="h-5 w-5 text-white" />
       </div>
-    );
-  };
-  
-  const Title=({text})=>{
-    return(
-        <h6 className="uppercase tracking-widest text-neutral-400 pl-10 font-light text-opacity-90 text-sm">
-            {text}</h6>
-    )
-  }
- 
+      <div>
+        <span className="text-xl font-bold text-white">Syncronus</span>
+        <p className="text-xs text-gray-500">Stay connected</p>
+      </div>
+    </div>
+  );
+};
 
+const Title = ({ text }) => {
+  return (
+    <h6 className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+      {text}
+    </h6>
+  );
+};

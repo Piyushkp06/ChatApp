@@ -5,11 +5,11 @@ import MessageContainer from './components/message-container'
 
 function ChatContainer() {
   return (
-    <div className="fixed top-0 h-[100vh] w-[100vw] bg-[#1c1d25] flex flex-col md:static md:flex-1">
-         <ChatHeader/>
-         <MessageContainer/>
-         <MessageBar/>
-         </div>
+    <div className="fixed inset-0 md:static md:flex-1 flex flex-col bg-[#0a0a0f]">
+      <ChatHeader />
+      <MessageContainer />
+      <MessageBar />
+    </div>
   )
 }
 

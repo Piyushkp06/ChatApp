@@ -1,14 +1,14 @@
 import { useAppStore } from "@/store";
-import { AvatarImage,Avatar } from "@radix-ui/react-avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { HOST } from "@/utils/constants";
 import { getColor } from "@/lib/utils";
+import { Hash, Check } from "lucide-react";
 
 const ContactList = ({ contacts, isChannel = false }) => {
   const {
     selectedChatData,
     setSelectedChatData,
     setSelectedChatType,
-    selectedChatType,
     setSelectedChatMessages,
   } = useAppStore();
 
@@ -22,60 +22,94 @@ const ContactList = ({ contacts, isChannel = false }) => {
       setSelectedChatMessages([]);
     }
   };
- 
+
+  if (!contacts || contacts.length === 0) {
+    return (
+      <div className="px-2 py-4 text-center">
+        <p className="text-sm text-gray-500">
+          {isChannel ? "No channels yet" : "No conversations yet"}
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="mt-5">
-    {contacts.map((contact) => (
-      <div
-        key={contact._id}
-        className={`pl-10 py-2 transition-all duration-300 cursor-pointer ${
-          selectedChatData && selectedChatData._id === contact._id
-            ? "bg-[#8417ff] hover:bg-[#8417ff]"
-            : "hover:bg-[#1f1f111]"
-        }`}
-        onClick={() => handleClick(contact)}
-      >
-        <div className="flex gap-5 items-center justify-start text-neutral-300">
-          {!isChannel && (
-            <Avatar className="h-10 w-10 rounded-full overflow-hidden">
-              {contact.image ? (
-                <AvatarImage
-                  src={`${HOST}/${contact.image}`}
-                  alt="profile"
-                  className="object-cover w-full h-full bg-black"
-                />
-              ) : (
-                <div
-                className={`
-                    ${
-                        selectedChatData && 
-                        selectedChatData._id === contact._id
-                        ?"bg-[#ffffff22] border-2 border-white/70"
-                        :getColor(contact.color)
-                    }
-                    uppercase h-10 w-10 text-lg border-[1px] flex items-center justify-center rounded-full ${(getColor(contact.color))}`}
-              >
-                {contact.firstName
-                  ? contact.firstName.split("").shift()
-                  : contact.email.split("").shift() } 
+    <div className="space-y-1">
+      {contacts.map((contact) => {
+        const isSelected = selectedChatData && selectedChatData._id === contact._id;
+        
+        return (
+          <div
+            key={contact._id}
+            className={`
+              group flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer
+              transition-all duration-200 ease-out
+              ${isSelected 
+                ? "bg-violet-600/20 border border-violet-500/30" 
+                : "hover:bg-white/5 border border-transparent"
+              }
+            `}
+            onClick={() => handleClick(contact)}
+          >
+            {/* Avatar */}
+            {isChannel ? (
+              <div className={`
+                h-10 w-10 rounded-xl flex items-center justify-center shrink-0
+                ${isSelected 
+                  ? "bg-violet-600 text-white" 
+                  : "bg-white/10 text-gray-400 group-hover:bg-violet-600/20 group-hover:text-violet-400"
+                }
+                transition-all duration-200
+              `}>
+                <Hash className="h-5 w-5" />
               </div>
+            ) : (
+              <Avatar className="h-10 w-10 rounded-xl shrink-0 ring-2 ring-transparent group-hover:ring-violet-500/20 transition-all">
+                {contact.image ? (
+                  <AvatarImage
+                    src={`${HOST}/${contact.image}`}
+                    alt={contact.firstName || contact.email}
+                    className="object-cover"
+                  />
+                ) : (
+                  <AvatarFallback className={`${getColor(contact.color)} text-sm font-medium`}>
+                    {contact.firstName
+                      ? contact.firstName[0].toUpperCase()
+                      : contact.email[0].toUpperCase()}
+                  </AvatarFallback>
+                )}
+              </Avatar>
             )}
-          </Avatar>
-        )}
-       {
-        isChannel && <div className="bg-[#ffffff22] h-10 w-10 flex items-center justify-center rounded-full">{contact.name[0]}</div>
-       }
-       {
-        isChannel?(<span>{contact.name}</span>):(<span>{contact.firstName?`${contact.firstName} ${contact.lastName}`:contact.email}</span>)
-       }
-      </div>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <span className={`
+                  text-sm font-medium truncate
+                  ${isSelected ? "text-white" : "text-gray-200 group-hover:text-white"}
+                  transition-colors
+                `}>
+                  {isChannel 
+                    ? contact.name 
+                    : (contact.firstName 
+                        ? `${contact.firstName} ${contact.lastName || ""}`.trim()
+                        : contact.email
+                      )
+                  }
+                </span>
+                {isSelected && (
+                  <Check className="h-4 w-4 text-violet-400 shrink-0" />
+                )}
+              </div>
+              {!isChannel && contact.email && contact.firstName && (
+                <p className="text-xs text-gray-500 truncate">{contact.email}</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
-  ))}
-</div>
+  );
+};
 
-
-  )
-}
-
-export default ContactList
+export default ContactList;
