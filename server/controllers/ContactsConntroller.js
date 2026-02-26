@@ -12,6 +12,11 @@ export const searchContacts = async (request, response, next) => {
       return response.status(400).send("searchTerm is required.");
     }
 
+    // Validate search term length to prevent ReDoS attacks
+    if (typeof searchTerm !== 'string' || searchTerm.length > 100) {
+      return response.status(400).send("Invalid search term.");
+    }
+
     const sanitizedSearchTerm = searchTerm.replace(
       /[.*+?^${}()|[\]\\]/g,
       "\\$&"

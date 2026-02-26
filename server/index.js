@@ -13,6 +13,7 @@ import redis from "./config/redis.js"
 import rabbitmq from "./config/rabbitmq.js"
 import { startAIWorker } from "./workers/aiWorker.js"
 import { startNotificationWorker } from "./workers/notificationWorker.js"
+import { ApiError } from "./utils/ApiError.js"
 
 dotenv.config();
 
@@ -33,7 +34,8 @@ app.use("/uploads/profiles",express.static("uploads/profiles"));
 app.use("/uploads/files",express.static("uploads/files"));
 
 app.use(cookieParser());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use("/api/auth",authRoutes);
 app.use("/api/contacts",contactsRoutes);
@@ -72,9 +74,51 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Error:', err.message);
+  
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors: err.errors
+    });
+  }
+  
+  // Handle Mongoose validation errors
+  if (err.name === 'ValidationError') {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation Error',
+      errors: Object.values(err.errors).map(e => e.message)
+    });
+  }
+  
+  // Handle duplicate key errors
+  if (err.code === 11000) {
+    return res.status(409).json({
+      success: false,
+      message: 'Duplicate entry found'
+    });
+  }
+  
+  return res.status(500).json({
+    success: false,
+    message: 'Internal Server Error'
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Route not found'
+  });
+});
 
 const server=app.listen(port,()=>{
-console.log(`Sever is running at http://localhost:${port}`); 
+console.log(`Server is running at http://localhost:${port}`); 
 });
 
 const io = setupSocket(server);

@@ -8,11 +8,21 @@ export const createChatSlice=(set,get)=>({
     fileUploadProgress: 0,
     fileDownloadProgress: 0,
     channels:[],
+    unreadCounts: {},
+    totalUnread: 0,
     setChannels:(channels)=>set({channels}),
     setIsUploading: (isUploading) => set({ isUploading }),
     setIsDownloading: (isDownloading) => set({ isDownloading }),
     setFileUploadProgress: (fileUploadProgress) => set({ fileUploadProgress }),
     setFileDownloadProgress: (fileDownloadProgress) => set({ fileDownloadProgress }),
+    setUnreadCounts: (unreadCounts) => set({ unreadCounts }),
+    setTotalUnread: (totalUnread) => set({ totalUnread }),
+    clearUnreadForContact: (contactId) => {
+      const unreadCounts = { ...get().unreadCounts };
+      delete unreadCounts[contactId];
+      const totalUnread = Object.values(unreadCounts).reduce((sum, count) => sum + parseInt(count), 0);
+      set({ unreadCounts, totalUnread });
+    },
 
     setSelectedChatType:(selectedChatType)=> set({selectedChatType}),
     setSelectedChatData:(selectedChatData)=> set({selectedChatData}),

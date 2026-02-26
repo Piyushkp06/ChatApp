@@ -11,21 +11,22 @@ export const useSocket = () => {
 
 export const SocketProvider = ({ children }) => {
   const socket = useRef(null); // Persist the socket reference
-  const userInfo = useAppStore(); // Access user info from the store
+  const { userInfo } = useAppStore(); // Correctly destructure userInfo from store
 
   useEffect(() => {
- //   console.log("userInfo:", userInfo);
-
-    if (userInfo && userInfo?.userInfo?.id) {
+    // Check if userInfo exists and has an id
+    const userId = userInfo?.id;
+    
+    if (userId) {
       // Prevent multiple socket connections
-      if (!socket.current) {
+      if (!socket.current || socket.current.disconnected) {
         socket.current = io(HOST, {
           withCredentials: true,
-          query: { userId: userInfo?.userInfo?.id },
+          query: { userId },
         });
 
         socket.current.on("connect", () => {
-      //    console.log("Connected to socket server");
+          console.log("Connected to socket server");
         });
 
         socket.current.on("receiveMessage", async (message) => {
@@ -33,10 +34,16 @@ export const SocketProvider = ({ children }) => {
             selectedChatData, 
             selectedChatType, 
             addMessage, 
-            addContactsInDMContacts 
+            addContactsInDMContacts,
+            unreadCounts,
+            setUnreadCounts,
+            setTotalUnread
           } = useAppStore.getState();
         
           console.log("Received message:", message);
+          
+          // Get the sender ID for unread tracking
+          const senderId = message.sender._id || message.sender;
         
           // Check if the message is being sent TO the AI (user's message to AI)
           if (message.recipient._id === "649e8c5a3c2d3a1b9a5f4e2a") {
@@ -60,10 +67,10 @@ export const SocketProvider = ({ children }) => {
           }
         
           // Handle normal messages (not AI-related)
-          if (
-            selectedChatType !== undefined &&
-            (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id)
-          ) {
+          const isCurrentChat = selectedChatType !== undefined &&
+            (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id);
+          
+          if (isCurrentChat) {
             const messageExists = selectedChatData.messages?.some(
               (msg) => msg._id === message._id
             );
@@ -74,6 +81,14 @@ export const SocketProvider = ({ children }) => {
             } else {
               console.log("Message already exists in chat:", message);
             }
+          } else {
+            // Message is from a different chat - increment unread count
+            const newUnreadCounts = { ...unreadCounts };
+            newUnreadCounts[senderId] = (parseInt(newUnreadCounts[senderId]) || 0) + 1;
+            setUnreadCounts(newUnreadCounts);
+            const newTotal = Object.values(newUnreadCounts).reduce((sum, count) => sum + parseInt(count), 0);
+            setTotalUnread(newTotal);
+            console.log("Incremented unread count for:", senderId);
           }
         
           addContactsInDMContacts(message);
@@ -121,16 +136,29 @@ export const SocketProvider = ({ children }) => {
         
 
         socket.current.on("recieve-channel-message",(message)=>{
-         
-          const { selectedChatData, selectedChatType, addMessage,addChannelInChannelList} = useAppStore.getState();
+          const { 
+            selectedChatData, 
+            selectedChatType, 
+            addMessage, 
+            addChannelInChannelList,
+            unreadCounts,
+            setUnreadCounts,
+            setTotalUnread
+          } = useAppStore.getState();
 
-      if (
-        selectedChatType !== undefined &&
-        selectedChatData._id === message.channelId
-      ) {
-        addMessage(message);
-      }
-      addChannelInChannelList(message);
+          const isCurrentChannel = selectedChatType !== undefined && selectedChatData._id === message.channelId;
+          
+          if (isCurrentChannel) {
+            addMessage(message);
+          } else {
+            // Channel message received but not in current view - increment unread
+            const newUnreadCounts = { ...unreadCounts };
+            newUnreadCounts[message.channelId] = (parseInt(newUnreadCounts[message.channelId]) || 0) + 1;
+            setUnreadCounts(newUnreadCounts);
+            const newTotal = Object.values(newUnreadCounts).reduce((sum, count) => sum + parseInt(count), 0);
+            setTotalUnread(newTotal);
+          }
+          addChannelInChannelList(message);
         })
 
      /*   socket.current.on("disconnect", () => {
@@ -146,7 +174,7 @@ export const SocketProvider = ({ children }) => {
         }
       };
     }
-  }, [userInfo?.userInfo?.id]); // Dependency on userInfo
+  }, [userInfo?.id]); // Dependency on userInfo.id
 
   return (
     <SocketContext.Provider value={socket.current}>

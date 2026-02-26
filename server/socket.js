@@ -2,6 +2,7 @@ import { Server as SocketIoServer } from "socket.io";
 import Message from "./models/MessagesModel.js";
 import Channel from "./models/ChannelModel.js";
 import queueService from "./services/queueService.js";
+import cacheService from "./services/cacheService.js";
 
 export const userSocketMap = new Map();
 let ioInstance = null;
@@ -17,11 +18,15 @@ const setupSocket = (server) => {
 
   ioInstance = io;
 
-  const disconnect = (socket) => {
+  const disconnect = async (socket) => {
     //console.log(`Client Disconnected: ${socket.id}`);
     for (const [userId, socketId] of userSocketMap.entries()) {
       if (socketId === socket.id) {
         userSocketMap.delete(userId);
+        // Track user going offline
+        await cacheService.setOffline(userId);
+        await cacheService.setLastSeen(userId);
+        console.log(`User ${userId} disconnected`);
         break;
       }
     }
@@ -48,7 +53,7 @@ const setupSocket = (server) => {
         io.to(recipientSocketId).emit("receiveMessage", messageData);
       //  console.log("reci",messageData);
       } else {
-        // Recipient is offline - queue notification
+        // Recipient is offline - queue notification and track unread
         await queueService.queueNotification({
           type: 'message',
           senderId: message.sender,
@@ -57,6 +62,9 @@ const setupSocket = (server) => {
           content: message.content,
           messageType: message.messageType
         });
+        
+        // Track unread message count
+        await cacheService.incrementUnread(message.recipient, message.sender);
       }
       if (senderSocketId) {
         io.to(senderSocketId).emit("receiveMessage", messageData);
@@ -148,6 +156,8 @@ const setupSocket = (server) => {
     const userId = socket.handshake.query.userId;
     if (userId) {
       userSocketMap.set(userId, socket.id);
+      // Track user coming online
+      cacheService.setOnline(userId);
  //    console.log(`User connected: ${userId} with socket ID: ${socket.id}`);
     } else {
   //    console.log("User ID not provided during connection");

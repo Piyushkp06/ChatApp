@@ -2,16 +2,25 @@ import React, { useEffect } from 'react';
 import ProfileInfo from './components/profile-info';
 import NewDm from './components/new-dm';
 import apiClient from '@/lib/api-client';
-import { GET_DM_CONTACTS_ROUTES, GET_USER_CHANNELS_ROUTE } from '@/utils/constants';
+import { GET_DM_CONTACTS_ROUTES, GET_USER_CHANNELS_ROUTE, GET_UNREAD_COUNTS_ROUTE } from '@/utils/constants';
 import { useAppStore } from '@/store';
 import ContactList from '@/components/contact-list';
 import CreateChannel from './components/create-channel';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Users, Sparkles } from 'lucide-react';
 
 function ContactsContainer() {
-  const { setDirectMessagesContacts, directMessagesContacts, channels, setChannels } = useAppStore();
+  const { 
+    setDirectMessagesContacts, 
+    directMessagesContacts, 
+    channels, 
+    setChannels,
+    setUnreadCounts,
+    setTotalUnread,
+    totalUnread
+  } = useAppStore();
 
   useEffect(() => {
     const getContacts = async () => {
@@ -31,10 +40,25 @@ function ContactsContainer() {
         setChannels(response.data.channels);
       }
     };
+
+    const getUnreadCounts = async () => {
+      try {
+        const response = await apiClient.get(GET_UNREAD_COUNTS_ROUTE, {
+          withCredentials: true,
+        });
+        if (response.data) {
+          setUnreadCounts(response.data.unreadCounts || {});
+          setTotalUnread(response.data.totalUnread || 0);
+        }
+      } catch (error) {
+        console.error("Failed to fetch unread counts:", error);
+      }
+    };
     
     getChannels();
     getContacts();
-  }, [setChannels, setDirectMessagesContacts]);
+    getUnreadCounts();
+  }, [setChannels, setDirectMessagesContacts, setUnreadCounts, setTotalUnread]);
 
   return (
     <div className="relative w-full md:w-[320px] lg:w-[360px] xl:w-[380px] h-full flex flex-col bg-[#0d0d12]/95 backdrop-blur-xl border-r border-white/5">

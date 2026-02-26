@@ -18,6 +18,9 @@ export const GET_ALL_CONTACTS_ROUTES=`${CONTACTS_ROUTES}/get-all-contacts`;
 export const MESSAGES_ROUTES="api/messages";
 export const GET_ALL_MESSAGES_ROUTE=`${MESSAGES_ROUTES}/get-messages`;
 export const UPLOAD_FILE_ROUTE=`${MESSAGES_ROUTES}/upload-file`;
+export const GET_UNREAD_COUNTS_ROUTE=`${MESSAGES_ROUTES}/unread-counts`;
+export const MARK_AS_READ_ROUTE=`${MESSAGES_ROUTES}/mark-as-read`;
+export const GET_USER_STATUS_ROUTE=`${MESSAGES_ROUTES}/user-status`;
 
 export const CHANNEL_ROUTES="api/channel";
 export const CREATE_CHANNEL_ROUTE=`${CHANNEL_ROUTES}/create-channel`;

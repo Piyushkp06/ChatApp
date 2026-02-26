@@ -155,7 +155,7 @@ function ChatHeader() {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="h-9 w-9 rounded-lg text-gray-400 hover:text-white hover:bg-red-500/10 hover:text-red-400"
+                className="h-9 w-9 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
                 onClick={closeChat}
               >
                 <X className="h-4 w-4" />

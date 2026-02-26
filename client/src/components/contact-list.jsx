@@ -1,8 +1,10 @@
 import { useAppStore } from "@/store";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { HOST } from "@/utils/constants";
+import { Badge } from "@/components/ui/badge";
+import { HOST, MARK_AS_READ_ROUTE } from "@/utils/constants";
 import { getColor } from "@/lib/utils";
 import { Hash, Check } from "lucide-react";
+import apiClient from "@/lib/api-client";
 
 const ContactList = ({ contacts, isChannel = false }) => {
   const {
@@ -10,9 +12,11 @@ const ContactList = ({ contacts, isChannel = false }) => {
     setSelectedChatData,
     setSelectedChatType,
     setSelectedChatMessages,
+    unreadCounts,
+    clearUnreadForContact,
   } = useAppStore();
 
-  const handleClick = (contact) => {
+  const handleClick = async (contact) => {
     if (isChannel) setSelectedChatType("channel");
     else setSelectedChatType("contact");
 
@@ -20,6 +24,16 @@ const ContactList = ({ contacts, isChannel = false }) => {
 
     if (selectedChatData && selectedChatData._id !== contact._id) {
       setSelectedChatMessages([]);
+    }
+
+    // Mark messages as read when opening a conversation
+    if (!isChannel && unreadCounts[contact._id]) {
+      try {
+        await apiClient.post(MARK_AS_READ_ROUTE, { contactId: contact._id }, { withCredentials: true });
+        clearUnreadForContact(contact._id);
+      } catch (error) {
+        console.error("Failed to mark as read:", error);
+      }
     }
   };
 
@@ -97,9 +111,19 @@ const ContactList = ({ contacts, isChannel = false }) => {
                       )
                   }
                 </span>
-                {isSelected && (
-                  <Check className="h-4 w-4 text-violet-400 shrink-0" />
-                )}
+                <div className="flex items-center gap-2">
+                  {/* Unread Badge */}
+                  {!isChannel && unreadCounts[contact._id] && !isSelected && (
+                    <Badge 
+                      className="h-5 min-w-[20px] px-1.5 bg-violet-600 text-white text-xs font-semibold rounded-full flex items-center justify-center"
+                    >
+                      {parseInt(unreadCounts[contact._id]) > 99 ? '99+' : unreadCounts[contact._id]}
+                    </Badge>
+                  )}
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-violet-400 shrink-0" />
+                  )}
+                </div>
               </div>
               {!isChannel && contact.email && contact.firstName && (
                 <p className="text-xs text-gray-500 truncate">{contact.email}</p>

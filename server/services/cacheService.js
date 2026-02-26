@@ -1,9 +1,15 @@
 import redis from '../config/redis.js';
 
 class CacheService {
+  // Helper to check if Redis is available
+  isRedisAvailable() {
+    return redis.status === 'ready';
+  }
+
   // User caching
   async getUser(userId) {
     try {
+      if (!this.isRedisAvailable()) return null;
       const cached = await redis.get(`user:${userId}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
@@ -14,6 +20,7 @@ class CacheService {
 
   async setUser(userId, userData, ttl = 3600) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.setex(`user:${userId}`, ttl, JSON.stringify(userData));
     } catch (error) {
       console.error('Cache setUser error:', error.message);
@@ -22,6 +29,7 @@ class CacheService {
 
   async deleteUser(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.del(`user:${userId}`);
     } catch (error) {
       console.error('Cache deleteUser error:', error.message);
@@ -31,6 +39,7 @@ class CacheService {
   // Session management
   async setSession(userId, token, ttl = 259200) { // 3 days
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.setex(`session:${userId}`, ttl, token);
     } catch (error) {
       console.error('Cache setSession error:', error.message);
@@ -39,6 +48,7 @@ class CacheService {
 
   async getSession(userId) {
     try {
+      if (!this.isRedisAvailable()) return null;
       return await redis.get(`session:${userId}`);
     } catch (error) {
       console.error('Cache getSession error:', error.message);
@@ -48,6 +58,7 @@ class CacheService {
 
   async deleteSession(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.del(`session:${userId}`);
     } catch (error) {
       console.error('Cache deleteSession error:', error.message);
@@ -57,6 +68,7 @@ class CacheService {
   // Online users tracking
   async setOnline(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.sadd('online:users', userId.toString());
     } catch (error) {
       console.error('Cache setOnline error:', error.message);
@@ -65,6 +77,7 @@ class CacheService {
 
   async setOffline(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.srem('online:users', userId.toString());
     } catch (error) {
       console.error('Cache setOffline error:', error.message);
@@ -73,6 +86,7 @@ class CacheService {
 
   async isOnline(userId) {
     try {
+      if (!this.isRedisAvailable()) return false;
       return await redis.sismember('online:users', userId.toString());
     } catch (error) {
       console.error('Cache isOnline error:', error.message);
@@ -82,6 +96,7 @@ class CacheService {
 
   async getOnlineUsers() {
     try {
+      if (!this.isRedisAvailable()) return [];
       return await redis.smembers('online:users');
     } catch (error) {
       console.error('Cache getOnlineUsers error:', error.message);
@@ -92,6 +107,7 @@ class CacheService {
   // Rate limiting
   async checkRateLimit(key, limit = 5, window = 900) {
     try {
+      if (!this.isRedisAvailable()) return true; // Allow if Redis unavailable
       const redisKey = `ratelimit:${key}`;
       const current = await redis.incr(redisKey);
       
@@ -181,9 +197,90 @@ class CacheService {
 
   async deleteChannels(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.del(`channels:${userId}`);
     } catch (error) {
       console.error('Cache deleteChannels error:', error.message);
+    }
+  }
+
+  // Unread message tracking
+  async incrementUnread(userId, senderId) {
+    try {
+      if (!this.isRedisAvailable()) return false;
+      await redis.hincrby(`unread:${userId}`, senderId, 1);
+      return true;
+    } catch (error) {
+      console.error('Cache incrementUnread error:', error.message);
+      return false;
+    }
+  }
+
+  async getUnreadCounts(userId) {
+    try {
+      if (!this.isRedisAvailable()) return {};
+      const counts = await redis.hgetall(`unread:${userId}`);
+      return counts || {};
+    } catch (error) {
+      console.error('Cache getUnreadCounts error:', error.message);
+      return {};
+    }
+  }
+
+  async getTotalUnreadCount(userId) {
+    try {
+      if (!this.isRedisAvailable()) return 0;
+      const counts = await redis.hgetall(`unread:${userId}`);
+      if (!counts) return 0;
+      return Object.values(counts).reduce((sum, count) => sum + parseInt(count), 0);
+    } catch (error) {
+      console.error('Cache getTotalUnreadCount error:', error.message);
+      return 0;
+    }
+  }
+
+  async clearUnread(userId, senderId) {
+    try {
+      if (!this.isRedisAvailable()) return false;
+      await redis.hdel(`unread:${userId}`, senderId);
+      return true;
+    } catch (error) {
+      console.error('Cache clearUnread error:', error.message);
+      return false;
+    }
+  }
+
+  async clearAllUnread(userId) {
+    try {
+      if (!this.isRedisAvailable()) return false;
+      await redis.del(`unread:${userId}`);
+      return true;
+    } catch (error) {
+      console.error('Cache clearAllUnread error:', error.message);
+      return false;
+    }
+  }
+
+  // Last seen tracking
+  async setLastSeen(userId) {
+    try {
+      if (!this.isRedisAvailable()) return false;
+      await redis.set(`lastseen:${userId}`, Date.now().toString());
+      return true;
+    } catch (error) {
+      console.error('Cache setLastSeen error:', error.message);
+      return false;
+    }
+  }
+
+  async getLastSeen(userId) {
+    try {
+      if (!this.isRedisAvailable()) return null;
+      const timestamp = await redis.get(`lastseen:${userId}`);
+      return timestamp ? parseInt(timestamp) : null;
+    } catch (error) {
+      console.error('Cache getLastSeen error:', error.message);
+      return null;
     }
   }
 }
