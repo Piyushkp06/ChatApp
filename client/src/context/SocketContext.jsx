@@ -1,8 +1,7 @@
 import { useAppStore } from "@/store";
-import { GET_AI_RESPONSE_ROUTE, HOST } from "@/utils/constants";
+import { HOST } from "@/utils/constants";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
-import apiClient from "../lib/api-client";
 
 const SocketContext = createContext(null);
 
@@ -39,66 +38,32 @@ export const SocketProvider = ({ children }) => {
         
           console.log("Received message:", message);
         
-          // Track if the AI message has been handled
-          let messageHandled = false;
-        
-          // Check if the message recipient is the AI
+          // Check if the message is being sent TO the AI (user's message to AI)
           if (message.recipient._id === "649e8c5a3c2d3a1b9a5f4e2a") {
-            try {
-              const response = await apiClient.post(
-                GET_AI_RESPONSE_ROUTE,
-                { content: message.content },
-                { withCredentials: true, headers: { "Content-Type": "application/json" } }
+            // This is the user's message to AI - just add it to chat
+            // The AI response will come via "ai-response" event
+            if (
+              selectedChatType !== undefined &&
+              (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id)
+            ) {
+              const messageExists = selectedChatData.messages?.some(
+                (msg) => msg._id === message._id
               );
           
-              console.log("AI Response:", response.data);
-          
-              const { userMessage, aiMessage } = response.data;
-          
-              // Deduplication for userMessage
-              if (userMessage) {
-                const userMessageExists = selectedChatData.messages?.some(
-                  (msg) => msg._id === userMessage._id
-                );
-          
-                if (!userMessageExists) {
-                  addMessage(userMessage);
-                  console.log("User message added to chat:", userMessage);
-                } else {
-                  console.log("User message already exists in chat:", userMessage);
-                }
+              if (!messageExists) {
+                addMessage(message);
+                console.log("User message to AI added to chat:", message);
               }
-          
-              // Deduplication for aiMessage
-              if (aiMessage) {
-                const aiMessageExists = selectedChatData.messages?.some(
-                  (msg) => msg._id === aiMessage._id
-                );
-          
-                if (!aiMessageExists) {
-                  addMessage(aiMessage);
-                  console.log("AI message added to chat:", aiMessage);
-                } else {
-                  console.log("AI message already exists in chat:", aiMessage);
-                }
-              } else {
-                console.error("AI response is invalid or empty");
-              }
-          
-              messageHandled = true;
-            } catch (error) {
-              console.error("Error calling generateAIResponse:", error);
             }
+            addContactsInDMContacts(message);
+            return; // Don't process further
           }
-          
         
-          // Handle normal messages
+          // Handle normal messages (not AI-related)
           if (
-            !messageHandled &&
             selectedChatType !== undefined &&
             (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id)
           ) {
-            // Ensure the message is not duplicated
             const messageExists = selectedChatData.messages?.some(
               (msg) => msg._id === message._id
             );
@@ -111,8 +76,46 @@ export const SocketProvider = ({ children }) => {
             }
           }
         
-          // Always add the message to DM contacts
           addContactsInDMContacts(message);
+        });
+
+        // Listen for AI responses (from RabbitMQ worker)
+        socket.current.on("ai-response", (data) => {
+          const { selectedChatData, selectedChatType, addMessage } = useAppStore.getState();
+          
+          console.log("AI Response received:", data);
+          
+          const { userMessage, aiMessage } = data;
+          
+          // Add both user message and AI response if they don't exist
+          if (
+            selectedChatType !== undefined &&
+            (selectedChatData._id === userMessage?.sender?._id || 
+             selectedChatData._id === userMessage?.recipient?._id ||
+             selectedChatData._id === "649e8c5a3c2d3a1b9a5f4e2a")
+          ) {
+            // Add user message if not exists
+            if (userMessage) {
+              const userMessageExists = selectedChatData.messages?.some(
+                (msg) => msg._id === userMessage._id
+              );
+              if (!userMessageExists) {
+                addMessage(userMessage);
+                console.log("User message to AI added:", userMessage);
+              }
+            }
+            
+            // Add AI response
+            if (aiMessage) {
+              const aiMessageExists = selectedChatData.messages?.some(
+                (msg) => msg._id === aiMessage._id
+              );
+              if (!aiMessageExists) {
+                addMessage(aiMessage);
+                console.log("AI response added:", aiMessage);
+              }
+            }
+          }
         });
         
         

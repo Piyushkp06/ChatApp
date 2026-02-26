@@ -19,7 +19,10 @@ class RabbitMQ {
       this.connection.on('close', () => {
         console.log('❌ RabbitMQ connection closed');
         this.isConnected = false;
-        setTimeout(() => this.connect(), 5000);
+        // Only retry in production
+        if (process.env.NODE_ENV === 'production') {
+          setTimeout(() => this.connect(), 5000);
+        }
       });
 
       this.connection.on('error', (err) => {
@@ -34,9 +37,12 @@ class RabbitMQ {
 
       return this.channel;
     } catch (error) {
-      console.error('❌ RabbitMQ connection failed:', error.message);
+      if (!this.errorLogged) {
+        console.log('⚠️  RabbitMQ not available - AI features will be limited');
+        this.errorLogged = true;
+      }
       this.isConnected = false;
-      setTimeout(() => this.connect(), 5000);
+      // Don't retry in development
       return null;
     }
   }

@@ -84,10 +84,14 @@ mongoose
 .then(()=>console.log('DB Connected Successfully'))
 .catch(err=>console.log(err.message));
 
-// Connect RabbitMQ and start workers
-rabbitmq.connect().then(() => {
-  startAIWorker(io, userSocketMap);
-  startNotificationWorker();
+// Connect RabbitMQ and start workers (optional in development)
+rabbitmq.connect().then((channel) => {
+  if (channel) {
+    startAIWorker(io, userSocketMap);
+    startNotificationWorker();
+  }
+}).catch(() => {
+  // Silently fail in development
 });
 
 // Graceful shutdown
