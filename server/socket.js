@@ -3,9 +3,59 @@ import Message from "./models/MessagesModel.js";
 import Channel from "./models/ChannelModel.js";
 import queueService from "./services/queueService.js";
 import cacheService from "./services/cacheService.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// AI System User ID
+const AI_SYSTEM_ID = process.env.AI_SYSTEM_ID || "649e8c5a3c2d3a1b9a5f4e2a";
+const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || "http://localhost:8000";
 
 export const userSocketMap = new Map();
 let ioInstance = null;
+
+// Handle AI message by calling Python backend
+const handleAIMessage = async (message, io) => {
+  const senderSocketId = userSocketMap.get(message.sender);
+  
+  try {
+    // Call Python backend for AI response
+    const response = await fetch(`${PYTHON_BACKEND_URL}/api/ai/generate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        content: message.content,
+        userId: message.sender
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Python backend error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Send both messages to the user
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("ai-response", {
+        userMessage: data.userMessage,
+        aiMessage: data.aiMessage
+      });
+      console.log(`✅ AI response sent to user ${message.sender}`);
+    }
+  } catch (error) {
+    console.error("❌ Error calling Python AI backend:", error.message);
+    
+    // Send error message back to user
+    if (senderSocketId) {
+      io.to(senderSocketId).emit("ai-error", {
+        error: "Failed to get AI response. Please try again."
+      });
+    }
+  }
+};
 
 const setupSocket = (server) => {
   const io = new SocketIoServer(server, {
@@ -34,6 +84,11 @@ const setupSocket = (server) => {
 
   const sendMessage = async (message) => {
     try {
+      // Check if message is being sent to AI
+      if (message.recipient === AI_SYSTEM_ID) {
+        return await handleAIMessage(message, io);
+      }
+      
    //   console.log("Message received on server:", message);
    //   console.log(message.sender);
       const senderSocketId = userSocketMap.get(message.sender);

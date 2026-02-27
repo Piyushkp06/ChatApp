@@ -8,10 +8,8 @@ import contactsRoutes from "./routes/ContactRoutes.js"
 import setupSocket, { userSocketMap, getIO } from "./socket.js"
 import messagesRoutes from "./routes/MessagesRoutes.js"
 import channelRoutes from "./routes/ChannelRoutes.js"
-import aiRoutes from "./routes/AIRoutes.js"
 import redis from "./config/redis.js"
 import rabbitmq from "./config/rabbitmq.js"
-import { startAIWorker } from "./workers/aiWorker.js"
 import { startNotificationWorker } from "./workers/notificationWorker.js"
 import { ApiError } from "./utils/ApiError.js"
 
@@ -41,7 +39,6 @@ app.use("/api/auth",authRoutes);
 app.use("/api/contacts",contactsRoutes);
 app.use("/api/messages",messagesRoutes);
 app.use("/api/channel",channelRoutes);
-app.use("/api/ai",aiRoutes);
 
 // Health check & Redis test endpoint
 app.get("/api/health", async (req, res) => {
@@ -131,7 +128,6 @@ mongoose
 // Connect RabbitMQ and start workers (optional in development)
 rabbitmq.connect().then((channel) => {
   if (channel) {
-    startAIWorker(io, userSocketMap);
     startNotificationWorker();
   }
 }).catch(() => {

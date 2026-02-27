@@ -7,6 +7,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { HOST } from '@/utils/constants';
 import { getColor } from '@/lib/utils';
 import { X, Hash, Users, Phone, Video, MoreVertical } from 'lucide-react';
+import SummarizeDialog from '../summarize-dialog';
 
 function ChatHeader() {
   const { closeChat, selectedChatData, selectedChatType } = useAppStore();
@@ -96,6 +97,9 @@ function ChatHeader() {
 
       {/* Right Section - Actions */}
       <div className="flex items-center gap-2">
+        {/* AI Summarize Button */}
+        <SummarizeDialog />
+
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>

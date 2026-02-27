@@ -1,4 +1,5 @@
 export const HOST=import.meta.env.VITE_SERVER_URL;
+export const AI_HOST=import.meta.env.VITE_AI_SERVER_URL || "http://localhost:8000";
 
 export const AUTH_ROUTES="api/auth";
 export const SIGNUP_ROUTE= `${AUTH_ROUTES}/signup`;
@@ -27,6 +28,8 @@ export const CREATE_CHANNEL_ROUTE=`${CHANNEL_ROUTES}/create-channel`;
 export const GET_USER_CHANNELS_ROUTE=`${CHANNEL_ROUTES}/get-user-channels`;
 export const GET_CHANNEL_MESSAGES_ROUTE=`${CHANNEL_ROUTES}/get-channel-messages`;
 
+// AI Routes (Python Backend)
 export const AI_ROUTES="api/ai";
-export const GET_AI_RESPONSE_ROUTE=`${AI_ROUTES}/generate`;
+export const GET_AI_RESPONSE_ROUTE=`${AI_HOST}/${AI_ROUTES}/generate`;
+export const SUMMARIZE_CHAT_ROUTE=`${AI_HOST}/${AI_ROUTES}/summarize`;
 

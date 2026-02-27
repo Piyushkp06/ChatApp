@@ -1,27 +1,6 @@
 import rabbitmq from '../config/rabbitmq.js';
 
 class QueueService {
-  // Queue AI request for background processing
-  async queueAIRequest(data) {
-    try {
-      if (!rabbitmq.isConnected) {
-        console.log('RabbitMQ not available - AI request not queued');
-        return false;
-      }
-      
-      const message = {
-        userId: data.userId,
-        content: data.content,
-        timestamp: new Date().toISOString()
-      };
-
-      return await rabbitmq.publish('ai-queue', message);
-    } catch (error) {
-      console.error('Failed to queue AI request:', error.message);
-      return false;
-    }
-  }
-
   // Queue notification for offline users
   async queueNotification(data) {
     try {

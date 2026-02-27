@@ -31,14 +31,13 @@ class RabbitMQ {
       });
 
       // Setup queues
-      await this.channel.assertQueue('ai-queue', { durable: true });
       await this.channel.assertQueue('notification-queue', { durable: true });
-      console.log('📬 Queues "ai-queue", "notification-queue" are ready');
+      console.log('📬 Queue "notification-queue" is ready');
 
       return this.channel;
     } catch (error) {
       if (!this.errorLogged) {
-        console.log('⚠️  RabbitMQ not available - AI features will be limited');
+        console.log('⚠️  RabbitMQ not available - notifications will be limited');
         this.errorLogged = true;
       }
       this.isConnected = false;
