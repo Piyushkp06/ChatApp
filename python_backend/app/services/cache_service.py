@@ -1,12 +1,13 @@
 """
 Cache Service - Redis integration for unread counts
 """
+from typing import Any, Dict, Optional
 import redis
 from app.config.settings import settings
 
 class CacheService:
     def __init__(self):
-        self.client = None
+        self.client: Optional[Any] = None
         self.connected = False
         self._connect()
     
@@ -31,7 +32,7 @@ class CacheService:
     
     async def clear_unread(self, user_id: str, from_id: str) -> bool:
         """Clear unread count for a specific contact"""
-        if not self.connected:
+        if not self.connected or self.client is None:
             return False
         try:
             self.client.hdel(f"unread:{user_id}", from_id)
@@ -40,12 +41,13 @@ class CacheService:
             print(f"Redis clear_unread error: {e}")
             return False
     
-    async def get_unread_counts(self, user_id: str) -> dict:
+    async def get_unread_counts(self, user_id: str) -> Dict[str, Any]:
         """Get all unread counts for a user"""
-        if not self.connected:
+        if not self.connected or self.client is None:
             return {}
         try:
-            return self.client.hgetall(f"unread:{user_id}")
+            result = self.client.hgetall(f"unread:{user_id}")
+            return result if isinstance(result, dict) else {}
         except Exception as e:
             print(f"Redis get_unread_counts error: {e}")
             return {}

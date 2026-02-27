@@ -17,6 +17,9 @@ async def generate_ai_response(user_id: str, content: str) -> dict:
     messages_collection = get_collection("messages")
     users_collection = get_collection("users")
     
+    if messages_collection is None or users_collection is None:
+        raise RuntimeError("Database not connected")
+    
     # Generate AI response
     ai_response_content = await generate_response(content)
     
@@ -101,6 +104,9 @@ async def summarize_chat(user_id: str, chat_id: str, chat_type: str) -> dict:
     """
     messages_collection = get_collection("messages")
     
+    if messages_collection is None:
+        raise RuntimeError("Database not connected")
+    
     if chat_type == "channel":
         # Get channel messages
         cursor = messages_collection.find(
@@ -126,6 +132,10 @@ async def summarize_chat(user_id: str, chat_id: str, chat_type: str) -> dict:
     
     # Get user info for message formatting
     users_collection = get_collection("users")
+    
+    if users_collection is None:
+        raise RuntimeError("Database not connected")
+    
     user_cache = {}
     
     async def get_user_name(uid):

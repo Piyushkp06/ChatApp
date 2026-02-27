@@ -2,6 +2,7 @@
 Database configuration and connection management
 """
 import os
+from typing import Any, Optional
 from motor.motor_asyncio import AsyncIOMotorClient
 from dotenv import load_dotenv
 
@@ -9,8 +10,8 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-client: AsyncIOMotorClient = None
-db = None
+client: Optional[Any] = None
+db: Optional[Any] = None
 
 async def connect_db():
     """Connect to MongoDB"""

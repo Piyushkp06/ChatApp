@@ -52,8 +52,8 @@ async def verify_token(request: Request) -> str:
             detail=f"Invalid token: {str(e)}"
         )
 
-def get_current_user_id(request: Request) -> str:
+async def get_current_user_id(request: Request) -> str:
     """
     Dependency to get current user ID from JWT token
     """
-    return verify_token(request)
+    return await verify_token(request)
