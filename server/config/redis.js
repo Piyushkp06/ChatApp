@@ -1,36 +1,29 @@
-import Redis from 'ioredis';
+import { Redis } from '@upstash/redis';
+import dotenv from 'dotenv';
 
-const redis = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-  retryStrategy: (times) => {
-    // Only retry 3 times, then give up
-    if (times > 3) {
-      console.log('⚠️  Redis unavailable - running without cache');
-      return null; // Stop retrying
-    }
-    return Math.min(times * 50, 2000);
-  },
-  maxRetriesPerRequest: 3,
-  lazyConnect: true, // Don't connect immediately
-});
+dotenv.config();
 
-redis.on('connect', () => {
-  console.log('✅ Redis connected successfully');
-});
+let redis = null;
+let isConnected = false;
 
-redis.on('error', (err) => {
-  // Suppress repetitive error messages
-  if (!redis.errorLogged) {
-    console.log('⚠️  Redis unavailable - running without cache');
-    redis.errorLogged = true;
+try {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  if (url && token) {
+    redis = new Redis({
+      url: url,
+      token: token,
+    });
+    isConnected = true;
+    console.log('✅ Upstash Redis connected successfully');
+  } else {
+    console.log('⚠️  Upstash Redis credentials not found - running without cache');
   }
-});
+} catch (error) {
+  console.log('⚠️  Redis unavailable - running without cache');
+  isConnected = false;
+}
 
-// Try to connect
-redis.connect().catch(() => {
-  console.log('⚠️  Redis not available - continuing without cache');
-});
-
+export const isRedisConnected = () => isConnected;
 export default redis;

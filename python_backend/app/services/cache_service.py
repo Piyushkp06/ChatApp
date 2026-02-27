@@ -1,9 +1,19 @@
 """
-Cache Service - Redis integration for unread counts
+Cache Service - Upstash Redis REST API integration
 """
 from typing import Any, Dict, Optional
-import redis
-from app.config.settings import settings
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# Try to import upstash_redis, fallback gracefully if not available
+try:
+    from upstash_redis import Redis
+    UPSTASH_AVAILABLE = True
+except ImportError:
+    UPSTASH_AVAILABLE = False
+    Redis = None
 
 class CacheService:
     def __init__(self):
@@ -12,16 +22,22 @@ class CacheService:
         self._connect()
     
     def _connect(self):
-        """Try to connect to Redis"""
+        """Try to connect to Upstash Redis"""
+        if not UPSTASH_AVAILABLE:
+            print("⚠️ upstash-redis not installed - running without cache")
+            return
+            
         try:
-            self.client = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                decode_responses=True
-            )
-            self.client.ping()
+            url = os.getenv("UPSTASH_REDIS_REST_URL")
+            token = os.getenv("UPSTASH_REDIS_REST_TOKEN")
+            
+            if not url or not token:
+                print("⚠️ Upstash credentials not found - running without cache")
+                return
+            
+            self.client = Redis(url=url, token=token)
             self.connected = True
-            print("✅ Connected to Redis")
+            print("✅ Connected to Upstash Redis")
         except Exception as e:
             print(f"⚠️ Redis not available: {e}")
             self.connected = False

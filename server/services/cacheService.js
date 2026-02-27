@@ -1,9 +1,9 @@
-import redis from '../config/redis.js';
+import redis, { isRedisConnected } from '../config/redis.js';
 
 class CacheService {
   // Helper to check if Redis is available
   isRedisAvailable() {
-    return redis.status === 'ready';
+    return isRedisConnected() && redis !== null;
   }
 
   // User caching
@@ -11,7 +11,7 @@ class CacheService {
     try {
       if (!this.isRedisAvailable()) return null;
       const cached = await redis.get(`user:${userId}`);
-      return cached ? JSON.parse(cached) : null;
+      return cached || null;
     } catch (error) {
       console.error('Cache getUser error:', error.message);
       return null;
@@ -21,7 +21,7 @@ class CacheService {
   async setUser(userId, userData, ttl = 3600) {
     try {
       if (!this.isRedisAvailable()) return;
-      await redis.setex(`user:${userId}`, ttl, JSON.stringify(userData));
+      await redis.set(`user:${userId}`, JSON.stringify(userData), { ex: ttl });
     } catch (error) {
       console.error('Cache setUser error:', error.message);
     }
@@ -40,7 +40,7 @@ class CacheService {
   async setSession(userId, token, ttl = 259200) { // 3 days
     try {
       if (!this.isRedisAvailable()) return;
-      await redis.setex(`session:${userId}`, ttl, token);
+      await redis.set(`session:${userId}`, token, { ex: ttl });
     } catch (error) {
       console.error('Cache setSession error:', error.message);
     }
@@ -125,8 +125,9 @@ class CacheService {
   // Messages cache
   async getMessages(conversationKey) {
     try {
+      if (!this.isRedisAvailable()) return null;
       const cached = await redis.get(`messages:${conversationKey}`);
-      return cached ? JSON.parse(cached) : null;
+      return cached || null;
     } catch (error) {
       console.error('Cache getMessages error:', error.message);
       return null;
@@ -135,7 +136,8 @@ class CacheService {
 
   async setMessages(conversationKey, messages, ttl = 1800) {
     try {
-      await redis.setex(`messages:${conversationKey}`, ttl, JSON.stringify(messages));
+      if (!this.isRedisAvailable()) return;
+      await redis.set(`messages:${conversationKey}`, JSON.stringify(messages), { ex: ttl });
     } catch (error) {
       console.error('Cache setMessages error:', error.message);
     }
@@ -143,6 +145,7 @@ class CacheService {
 
   async deleteMessages(conversationKey) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.del(`messages:${conversationKey}`);
     } catch (error) {
       console.error('Cache deleteMessages error:', error.message);
@@ -152,8 +155,9 @@ class CacheService {
   // Contacts cache
   async getContacts(userId) {
     try {
+      if (!this.isRedisAvailable()) return null;
       const cached = await redis.get(`contacts:${userId}`);
-      return cached ? JSON.parse(cached) : null;
+      return cached || null;
     } catch (error) {
       console.error('Cache getContacts error:', error.message);
       return null;
@@ -162,7 +166,8 @@ class CacheService {
 
   async setContacts(userId, contacts, ttl = 1800) {
     try {
-      await redis.setex(`contacts:${userId}`, ttl, JSON.stringify(contacts));
+      if (!this.isRedisAvailable()) return;
+      await redis.set(`contacts:${userId}`, JSON.stringify(contacts), { ex: ttl });
     } catch (error) {
       console.error('Cache setContacts error:', error.message);
     }
@@ -170,6 +175,7 @@ class CacheService {
 
   async deleteContacts(userId) {
     try {
+      if (!this.isRedisAvailable()) return;
       await redis.del(`contacts:${userId}`);
     } catch (error) {
       console.error('Cache deleteContacts error:', error.message);
@@ -179,8 +185,9 @@ class CacheService {
   // Channels cache
   async getChannels(userId) {
     try {
+      if (!this.isRedisAvailable()) return null;
       const cached = await redis.get(`channels:${userId}`);
-      return cached ? JSON.parse(cached) : null;
+      return cached || null;
     } catch (error) {
       console.error('Cache getChannels error:', error.message);
       return null;
@@ -189,7 +196,8 @@ class CacheService {
 
   async setChannels(userId, channels, ttl = 1800) {
     try {
-      await redis.setex(`channels:${userId}`, ttl, JSON.stringify(channels));
+      if (!this.isRedisAvailable()) return;
+      await redis.set(`channels:${userId}`, JSON.stringify(channels), { ex: ttl });
     } catch (error) {
       console.error('Cache setChannels error:', error.message);
     }

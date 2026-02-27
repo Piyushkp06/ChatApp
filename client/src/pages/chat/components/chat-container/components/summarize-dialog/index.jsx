@@ -13,7 +13,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Sparkles, Loader2, MessageSquare, FileText, Copy, Check } from 'lucide-react';
-import { apiClient } from '@/lib/api-client';
+import apiClient from '@/lib/api-client';
 import { SUMMARIZE_CHAT_ROUTE, MARK_AS_READ_ROUTE } from '@/utils/constants';
 import { useAppStore } from '@/store';
 import { toast } from 'sonner';

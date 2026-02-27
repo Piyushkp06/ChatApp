@@ -1,16 +1,80 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/store';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { HOST } from '@/utils/constants';
+import { HOST, GET_USER_STATUS_ROUTE } from '@/utils/constants';
 import { getColor } from '@/lib/utils';
 import { X, Hash, Users, Phone, Video, MoreVertical } from 'lucide-react';
 import SummarizeDialog from '../summarize-dialog';
+import apiClient from  '@/lib/api-client';
+
+// Format last seen time in a human-readable way
+const formatLastSeen = (lastSeenDate) => {
+  if (!lastSeenDate) return 'Unknown';
+  
+  const now = new Date();
+  const lastSeen = new Date(lastSeenDate);
+  const diffMs = now - lastSeen;
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  
+  if (diffSeconds < 60) return 'Just now';
+  if (diffMinutes < 60) return `${diffMinutes} min${diffMinutes > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  
+  // For older dates, show the actual date
+  return lastSeen.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric',
+    year: lastSeen.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+  });
+};
 
 function ChatHeader() {
   const { closeChat, selectedChatData, selectedChatType } = useAppStore();
+  const [userStatus, setUserStatus] = useState({ online: false, lastSeen: null });
+  const [statusLoading, setStatusLoading] = useState(false);
+
+  // Fetch user status when selected contact changes
+  useEffect(() => {
+    const fetchUserStatus = async () => {
+      if (selectedChatType !== 'contact' || !selectedChatData?._id) {
+        return;
+      }
+      
+      setStatusLoading(true);
+      try {
+        const response = await apiClient.get(
+          `${GET_USER_STATUS_ROUTE}/${selectedChatData._id}`,
+          { withCredentials: true }
+        );
+        
+        if (response.data) {
+          setUserStatus({
+            online: response.data.online === 1 || response.data.online === true,
+            lastSeen: response.data.lastSeen
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch user status:', error);
+        setUserStatus({ online: false, lastSeen: null });
+      } finally {
+        setStatusLoading(false);
+      }
+    };
+
+    fetchUserStatus();
+    
+    // Poll for status updates every 30 seconds
+    const interval = setInterval(fetchUserStatus, 30000);
+    return () => clearInterval(interval);
+  }, [selectedChatData?._id, selectedChatType]);
 
   return (
     <div className="h-[72px] px-4 md:px-6 flex items-center justify-between bg-[#0d0d12]/80 backdrop-blur-xl border-b border-white/5">
@@ -88,8 +152,21 @@ function ChatHeader() {
             </div>
           ) : selectedChatType === 'contact' ? (
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-xs text-gray-400">Online</span>
+              {statusLoading ? (
+                <span className="text-xs text-gray-500">Loading...</span>
+              ) : userStatus.online ? (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="text-xs text-emerald-400">Online</span>
+                </>
+              ) : (
+                <>
+                  <span className="h-2 w-2 rounded-full bg-gray-500" />
+                  <span className="text-xs text-gray-400">
+                    Last seen {formatLastSeen(userStatus.lastSeen)}
+                  </span>
+                </>
+              )}
             </div>
           ) : null}
         </div>

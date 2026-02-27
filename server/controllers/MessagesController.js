@@ -96,8 +96,15 @@ export const getUserStatus = async (request, response, next) => {
       return response.status(400).json({ message: "userId is required" });
     }
     
-    const isOnline = await cacheService.isOnline(userId);
+    // Try Redis first
+    let isOnline = await cacheService.isOnline(userId);
     const lastSeen = await cacheService.getLastSeen(userId);
+    
+    // Fallback to socket map if Redis returned false (might be unavailable)
+    if (!isOnline) {
+      const { userSocketMap } = await import('../socket.js');
+      isOnline = userSocketMap.has(userId);
+    }
     
     return response.status(200).json({ 
       userId,

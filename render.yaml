@@ -1,0 +1,62 @@
+services:
+  # Node.js Backend
+  - type: web
+    name: chatapp-server
+    runtime: node
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8597
+      - key: JWT_KEY
+        sync: false
+      - key: ORIGIN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: AI_SYSTEM_ID
+        sync: false
+      - key: PYTHON_BACKEND_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
+      - key: RABBITMQ_URL
+        sync: false
+
+  # Python Backend
+  - type: web
+    name: chatapp-python
+    runtime: python
+    region: oregon
+    plan: free
+    branch: main
+    rootDir: python_backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: NODE_BACKEND_URL
+        sync: false
+      - key: ORIGIN
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false
