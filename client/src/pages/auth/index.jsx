@@ -8,7 +8,7 @@ import apiClient from "@/lib/api-client";
 import { SIGNUP_ROUTE, LOGIN_ROUTE } from "@/utils/constants";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/store";
-import { Mail, Lock, Eye, EyeOff, Sparkles, MessageCircle, Users, Zap } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Sparkles, MessageCircle, Users, Zap, Check, X } from "lucide-react";
 
 function Auth() {
   const navigate = useNavigate();
@@ -22,6 +22,58 @@ function Auth() {
   const validateEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
+  };
+
+  /**
+   * Password validation
+   * Requirements:
+   * - Minimum 8 characters
+   * - At least 1 uppercase letter
+   * - At least 1 lowercase letter  
+   * - At least 1 number
+   * - At least 1 special character
+   */
+  const validatePassword = (password) => {
+    const errors = [];
+    
+    if (!password || password.length < 8) {
+      errors.push("Password must be at least 8 characters");
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.push("Must contain uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.push("Must contain lowercase letter");
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.push("Must contain a number");
+    }
+    if (!/[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/~`]/.test(password)) {
+      errors.push("Must contain special character");
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  };
+
+  // Get individual password requirement checks for visual feedback
+  const getPasswordRequirements = (pwd) => {
+    return [
+      { label: "8+ characters", met: pwd.length >= 8 },
+      { label: "Uppercase letter", met: /[A-Z]/.test(pwd) },
+      { label: "Lowercase letter", met: /[a-z]/.test(pwd) },
+      { label: "Number", met: /[0-9]/.test(pwd) },
+      { label: "Special character", met: /[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/~`]/.test(pwd) },
+    ];
+  };
+
+  // Calculate password strength (0-5)
+  const getPasswordStrength = (pwd) => {
+    if (!pwd) return 0;
+    const requirements = getPasswordRequirements(pwd);
+    return requirements.filter(r => r.met).length;
   };
 
   const validateLogin = () => {
@@ -53,10 +105,14 @@ function Auth() {
       toast.error("Password is required");
       return false;
     }
-    if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+    
+    // Validate password strength
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.isValid) {
+      toast.error(passwordCheck.errors[0]);
       return false;
     }
+    
     if (!confirmPassword.length) {
       toast.error("Confirm Password is required");
       return false;
@@ -264,6 +320,51 @@ function Auth() {
                       {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     </button>
                   </div>
+                  
+                  {/* Password Strength Indicator */}
+                  {password.length > 0 && (
+                    <div className="space-y-2 px-1">
+                      {/* Strength Bar */}
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((level) => (
+                          <div
+                            key={level}
+                            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                              getPasswordStrength(password) >= level
+                                ? getPasswordStrength(password) <= 2
+                                  ? 'bg-red-500'
+                                  : getPasswordStrength(password) <= 3
+                                  ? 'bg-yellow-500'
+                                  : getPasswordStrength(password) <= 4
+                                  ? 'bg-blue-500'
+                                  : 'bg-green-500'
+                                : 'bg-white/10'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Requirements Checklist */}
+                      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                        {getPasswordRequirements(password).map((req, i) => (
+                          <div
+                            key={i}
+                            className={`flex items-center gap-1.5 transition-colors ${
+                              req.met ? 'text-green-400' : 'text-gray-500'
+                            }`}
+                          >
+                            {req.met ? (
+                              <Check className="h-3 w-3" />
+                            ) : (
+                              <X className="h-3 w-3" />
+                            )}
+                            <span>{req.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
                     <Input

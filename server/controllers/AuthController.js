@@ -14,6 +14,40 @@ const validateEmail = (email) => {
     return regex.test(email);
 };
 
+/**
+ * Password validation
+ * Requirements:
+ * - Minimum 8 characters
+ * - At least 1 uppercase letter
+ * - At least 1 lowercase letter
+ * - At least 1 number
+ * - At least 1 special character (@$!%*?&)
+ */
+const validatePassword = (password) => {
+    const errors = [];
+    
+    if (!password || password.length < 8) {
+        errors.push("Password must be at least 8 characters long");
+    }
+    if (!/[A-Z]/.test(password)) {
+        errors.push("Password must contain at least 1 uppercase letter");
+    }
+    if (!/[a-z]/.test(password)) {
+        errors.push("Password must contain at least 1 lowercase letter");
+    }
+    if (!/[0-9]/.test(password)) {
+        errors.push("Password must contain at least 1 number");
+    }
+    if (!/[@$!%*?&#^()_+\-=\[\]{};':"\\|,.<>\/~`]/.test(password)) {
+        errors.push("Password must contain at least 1 special character");
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors
+    };
+};
+
 const createToken=(email,userId)=>{
     return jwt.sign({email,userId},process.env.JWT_KEY,{expiresIn:maxAge});
 }
@@ -26,6 +60,12 @@ export const signup= async(request,response,next)=>{
 
         if (!validateEmail(email)) {
             throw new ApiError(400,"Email is not valid");
+        }
+
+        // Validate password strength
+        const passwordValidation = validatePassword(password);
+        if (!passwordValidation.isValid) {
+            throw new ApiError(400, passwordValidation.errors[0]);
         }
 
         // Rate limiting
