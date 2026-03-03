@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import { useAppStore } from '@/store';
 import { useSocket } from '@/context/SocketContext';
+import { useEncryption } from '@/hooks/useEncryption';
 import apiClient from '@/lib/api-client';
 import { UPLOAD_FILE_ROUTE } from '@/utils/constants';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Send, Paperclip, Smile, Mic, Image } from 'lucide-react';
+import { Send, Paperclip, Smile, Mic, Image, Lock, LockOpen } from 'lucide-react';
 
 function MessageBar() {
   const emojiRef = useRef();
@@ -20,11 +21,17 @@ function MessageBar() {
     userInfo,
     setIsUploading,
     setFileUploadProgress,
+    encryptionEnabled,
+    setEncryptionEnabled,
+    identityPublicKey,
   } = useAppStore();
+  
+  const { encrypt, encryptionReady, establishSession } = useEncryption();
   
   const [message, setMessage] = useState("");
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isEncrypting, setIsEncrypting] = useState(false);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -47,14 +54,49 @@ function MessageBar() {
     if (!message.trim()) return;
     
     if (selectedChatType === "contact") {
-      socket.emit("sendMessage", {
-        sender: userInfo?.id,
-        content: message,
-        recipient: selectedChatData?._id,
-        messageType: "text",
-        fileUrl: undefined,
-      });
+      setIsEncrypting(true);
+      try {
+        // AI System ID - don't encrypt messages to AI
+        const AI_SYSTEM_ID = "649e8c5a3c2d3a1b9a5f4e2a";
+        const isAIChat = selectedChatData?._id === AI_SYSTEM_ID;
+        
+        // Try to encrypt the message if encryption is enabled and not AI chat
+        let encryptedContent = null;
+        if (encryptionEnabled && encryptionReady && !isAIChat) {
+          try {
+            encryptedContent = await encrypt(selectedChatData?._id, message);
+          } catch (err) {
+            console.warn('Encryption failed, sending unencrypted:', err);
+          }
+        }
+        
+        if (encryptedContent) {
+          // Send encrypted message
+          socket.emit("sendMessage", {
+            sender: userInfo?.id,
+            content: "[Encrypted Message]", // Placeholder for unencrypted view
+            recipient: selectedChatData?._id,
+            messageType: "encrypted",
+            encrypted: true,
+            encryptedContent: encryptedContent,
+            senderPublicKey: identityPublicKey,
+            fileUrl: undefined,
+          });
+        } else {
+          // Send unencrypted message (fallback or AI chat)
+          socket.emit("sendMessage", {
+            sender: userInfo?.id,
+            content: message,
+            recipient: selectedChatData?._id,
+            messageType: "text",
+            fileUrl: undefined,
+          });
+        }
+      } finally {
+        setIsEncrypting(false);
+      }
     } else if (selectedChatType === "channel") {
+      // Channel messages are not encrypted (group encryption is more complex)
       socket.emit("send-channel-message", {
         sender: userInfo?.id,
         content: message,
@@ -244,16 +286,47 @@ function MessageBar() {
           </Tooltip>
         </TooltipProvider>
 
+        {/* Encryption Toggle Button */}
+        {selectedChatType === "contact" && selectedChatData?._id !== "649e8c5a3c2d3a1b9a5f4e2a" && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-10 w-10 shrink-0 rounded-xl transition-all ${
+                    encryptionEnabled && encryptionReady
+                      ? 'text-green-400 bg-green-500/10 hover:bg-green-500/20' 
+                      : 'text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10'
+                  }`}
+                  onClick={() => setEncryptionEnabled(!encryptionEnabled)}
+                >
+                  {encryptionEnabled && encryptionReady ? (
+                    <Lock className="h-5 w-5" />
+                  ) : (
+                    <LockOpen className="h-5 w-5" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-[#1a1a24] border-white/10">
+                {encryptionEnabled && encryptionReady 
+                  ? 'End-to-End Encrypted' 
+                  : 'Encryption Disabled'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+
         {/* Send Button */}
         <Button
           size="icon"
           className={`h-10 w-10 shrink-0 rounded-xl transition-all duration-200 ${
-            message.trim()
+            message.trim() && !isEncrypting
               ? 'gradient-primary glow-sm hover:opacity-90'
               : 'bg-white/5 text-gray-500 cursor-not-allowed'
           }`}
           onClick={handleSendMessage}
-          disabled={!message.trim()}
+          disabled={!message.trim() || isEncrypting}
         >
           <Send className="h-5 w-5" />
         </Button>

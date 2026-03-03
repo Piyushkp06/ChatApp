@@ -28,6 +28,13 @@ export const CREATE_CHANNEL_ROUTE=`${CHANNEL_ROUTES}/create-channel`;
 export const GET_USER_CHANNELS_ROUTE=`${CHANNEL_ROUTES}/get-user-channels`;
 export const GET_CHANNEL_MESSAGES_ROUTE=`${CHANNEL_ROUTES}/get-channel-messages`;
 
+// Encryption Routes
+export const ENCRYPTION_ROUTES="api/encryption";
+export const UPDATE_PUBLIC_KEY_ROUTE=`${ENCRYPTION_ROUTES}/update-public-key`;
+export const GET_MY_PUBLIC_KEY_ROUTE=`${ENCRYPTION_ROUTES}/my-public-key`;
+export const GET_PUBLIC_KEY_ROUTE=`${ENCRYPTION_ROUTES}/public-key`;
+export const GET_PUBLIC_KEYS_ROUTE=`${ENCRYPTION_ROUTES}/public-keys`;
+
 // AI Routes (Python Backend)
 export const AI_ROUTES="api/ai";
 export const GET_AI_RESPONSE_ROUTE=`${AI_HOST}/${AI_ROUTES}/generate`;

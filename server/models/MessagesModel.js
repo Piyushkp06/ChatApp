@@ -13,7 +13,7 @@ recipient:{
  },
  messageType:{
     type:String,
-    enum:["text","file"],
+    enum:["text","file","encrypted","key-exchange"],
     required:true,
  },
  content:{
@@ -21,6 +21,32 @@ recipient:{
     required: function(){
         return this.messageType === "text";
     },
+},
+// Encrypted message fields
+encrypted:{
+    type:Boolean,
+    default:false,
+},
+encryptedContent:{
+    // Base64 encoded ciphertext
+    ciphertext: String,
+    // Base64 encoded nonce
+    nonce: String,
+    // Base64 encoded sender's ephemeral public key
+    publicKey: String,
+    // Message number in the ratchet chain
+    messageNumber: Number,
+    // Previous chain length for ratchet sync
+    previousChainLength: Number,
+},
+// Key exchange data
+keyExchange:{
+    // Type: 'init' or 'response'
+    type: String,
+    // Sender's identity public key
+    identityKey: String,
+    // Sender's ephemeral public key
+    ephemeralKey: String,
 },
 fileUrl:{
     type:String,

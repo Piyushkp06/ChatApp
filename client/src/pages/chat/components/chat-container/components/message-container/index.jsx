@@ -6,7 +6,9 @@ import { GET_ALL_MESSAGES_ROUTE, GET_CHANNEL_MESSAGES_ROUTE, HOST } from "@/util
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { getColor } from "@/lib/utils";
-import { FileArchive, Download, X, Image as ImageIcon } from "lucide-react";
+import { FileArchive, Download, X, Image as ImageIcon, Lock, ShieldCheck, ShieldAlert } from "lucide-react";
+import { sessionManager } from "@/utils/ratchetSession";
+import { initSodium } from "@/utils/crypto";
 
 function MessageContainer() {
   const scrollRef = useRef();
@@ -23,6 +25,29 @@ function MessageContainer() {
   const [showImage, setShowImage] = useState(false);
   const [imageURL, setImageURL] = useState(null);
 
+  // Helper function to decrypt a message
+  const decryptMessage = async (message, contactId) => {
+    if (!message.encrypted || !message.encryptedContent) {
+      return message;
+    }
+    
+    try {
+      await initSodium();
+      
+      // Try to decrypt if we have a session
+      if (sessionManager.hasInitializedSession(contactId)) {
+        const decryptedContent = await sessionManager.decrypt(contactId, message.encryptedContent);
+        return { ...message, content: decryptedContent, decrypted: true };
+      }
+      
+      // No session - can't decrypt historical messages without establishing session first
+      return { ...message, content: '[Encrypted message - session required]', decryptionError: true };
+    } catch (error) {
+      console.error('Failed to decrypt historical message:', error);
+      return { ...message, content: '[Decryption failed]', decryptionError: true };
+    }
+  };
+
   useEffect(() => {
     const getMessages = async () => {
       try {
@@ -32,7 +57,17 @@ function MessageContainer() {
           { withCredentials: true }
         );
         if (response.data.messages) {
-          setSelectedChatMessages(response.data.messages);
+          // Decrypt encrypted messages
+          const messages = await Promise.all(
+            response.data.messages.map(async (msg) => {
+              if (msg.encrypted && msg.encryptedContent) {
+                const senderId = msg.sender?._id || msg.sender;
+                return await decryptMessage(msg, senderId);
+              }
+              return msg;
+            })
+          );
+          setSelectedChatMessages(messages);
         }
       } catch (error) {
         console.log({ error });
@@ -136,7 +171,7 @@ function MessageContainer() {
     return (
       <div className={`flex mb-3 ${isSent ? "justify-end" : "justify-start"}`}>
         <div className={`max-w-[70%] ${isSent ? "items-end" : "items-start"} flex flex-col`}>
-          {message.messageType === "text" && (
+          {(message.messageType === "text" || message.messageType === "encrypted") && (
             <div
               className={`
                 px-4 py-3 rounded-2xl text-sm leading-relaxed
@@ -146,7 +181,21 @@ function MessageContainer() {
                 }
               `}
             >
-              {message.content}
+              <div className="flex items-start gap-2">
+                <span className="flex-1">{message.content}</span>
+                {/* Encryption indicator */}
+                {message.encrypted && (
+                  <span className="flex-shrink-0 mt-0.5" title={message.decrypted ? "Decrypted message" : message.decryptionError ? "Decryption failed" : "Encrypted"}>
+                    {message.decrypted ? (
+                      <ShieldCheck className="h-3.5 w-3.5 text-green-400" />
+                    ) : message.decryptionError ? (
+                      <ShieldAlert className="h-3.5 w-3.5 text-red-400" />
+                    ) : (
+                      <Lock className="h-3.5 w-3.5 text-gray-400" />
+                    )}
+                  </span>
+                )}
+              </div>
             </div>
           )}
 

@@ -32,6 +32,16 @@ const userSchema=new mongoose.Schema({
         type:Boolean,
         default:false,
     },
+    // E2E Encryption public key
+    publicKey:{
+        type:String,
+        required:false,
+    },
+    // Timestamp when public key was last updated
+    publicKeyUpdatedAt:{
+        type:Date,
+        required:false,
+    },
 
 
 });

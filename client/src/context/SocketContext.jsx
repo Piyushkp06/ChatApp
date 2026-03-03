@@ -2,11 +2,56 @@ import { useAppStore } from "@/store";
 import { HOST } from "@/utils/constants";
 import { createContext, useContext, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
+import { sessionManager } from "@/utils/ratchetSession";
+import { initSodium } from "@/utils/crypto";
 
 const SocketContext = createContext(null);
 
 export const useSocket = () => {
   return useContext(SocketContext);
+};
+
+// Helper function to decrypt messages
+const decryptMessageContent = async (message, senderId) => {
+  try {
+    if (!message.encrypted || !message.encryptedContent) {
+      return message;
+    }
+
+    // Initialize sodium if needed
+    await initSodium();
+
+    // Check if we have a session with this sender
+    if (!sessionManager.hasInitializedSession(senderId)) {
+      // Try to establish session with sender's public key
+      if (message.senderPublicKey) {
+        const { acceptSession, setContactPublicKey } = useAppStore.getState();
+        setContactPublicKey(senderId, message.senderPublicKey);
+        
+        // Initialize session as responder
+        await sessionManager.acceptSession(
+          senderId,
+          message.senderPublicKey,
+          message.encryptedContent.publicKey
+        );
+      } else {
+        console.warn('Cannot decrypt: no session and no sender public key');
+        return { ...message, content: '[Unable to decrypt - no session]' };
+      }
+    }
+
+    // Decrypt the message
+    const decryptedContent = await sessionManager.decrypt(senderId, message.encryptedContent);
+    
+    return {
+      ...message,
+      content: decryptedContent,
+      decrypted: true,
+    };
+  } catch (error) {
+    console.error('Failed to decrypt message:', error);
+    return { ...message, content: '[Decryption failed]', decryptionError: true };
+  }
 };
 
 export const SocketProvider = ({ children }) => {
@@ -44,42 +89,49 @@ export const SocketProvider = ({ children }) => {
           
           // Get the sender ID for unread tracking
           const senderId = message.sender._id || message.sender;
+
+          // Decrypt encrypted messages
+          let processedMessage = message;
+          if (message.encrypted && message.encryptedContent) {
+            processedMessage = await decryptMessageContent(message, senderId);
+            console.log("Decrypted message:", processedMessage);
+          }
         
           // Check if the message is being sent TO the AI (user's message to AI)
-          if (message.recipient._id === "649e8c5a3c2d3a1b9a5f4e2a") {
+          if (processedMessage.recipient._id === "649e8c5a3c2d3a1b9a5f4e2a") {
             // This is the user's message to AI - just add it to chat
             // The AI response will come via "ai-response" event
             if (
               selectedChatType !== undefined &&
-              (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id)
+              (selectedChatData._id === processedMessage.sender._id || selectedChatData._id === processedMessage.recipient._id)
             ) {
               const messageExists = selectedChatData.messages?.some(
-                (msg) => msg._id === message._id
+                (msg) => msg._id === processedMessage._id
               );
           
               if (!messageExists) {
-                addMessage(message);
-                console.log("User message to AI added to chat:", message);
+                addMessage(processedMessage);
+                console.log("User message to AI added to chat:", processedMessage);
               }
             }
-            addContactsInDMContacts(message);
+            addContactsInDMContacts(processedMessage);
             return; // Don't process further
           }
         
           // Handle normal messages (not AI-related)
           const isCurrentChat = selectedChatType !== undefined &&
-            (selectedChatData._id === message.sender._id || selectedChatData._id === message.recipient._id);
+            (selectedChatData._id === processedMessage.sender._id || selectedChatData._id === processedMessage.recipient._id);
           
           if (isCurrentChat) {
             const messageExists = selectedChatData.messages?.some(
-              (msg) => msg._id === message._id
+              (msg) => msg._id === processedMessage._id
             );
         
             if (!messageExists) {
-              addMessage(message);
-              console.log("Normal message added to chat:", message);
+              addMessage(processedMessage);
+              console.log("Normal message added to chat:", processedMessage);
             } else {
-              console.log("Message already exists in chat:", message);
+              console.log("Message already exists in chat:", processedMessage);
             }
           } else {
             // Message is from a different chat - increment unread count
@@ -91,7 +143,7 @@ export const SocketProvider = ({ children }) => {
             console.log("Incremented unread count for:", senderId);
           }
         
-          addContactsInDMContacts(message);
+          addContactsInDMContacts(processedMessage);
         });
 
         // Listen for AI responses (from RabbitMQ worker)

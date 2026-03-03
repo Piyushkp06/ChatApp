@@ -7,6 +7,7 @@ import ChatContainer from './components/chat-container';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Download } from 'lucide-react';
+import { useEncryption } from '@/hooks/useEncryption';
 
 function Chat() {
   const {
@@ -19,6 +20,24 @@ function Chat() {
   } = useAppStore();
   
   const navigate = useNavigate();
+  const { initialize: initEncryption, encryptionReady } = useEncryption();
+
+  // Initialize encryption when chat loads
+  useEffect(() => {
+    const setupEncryption = async () => {
+      try {
+        await initEncryption();
+        console.log('✅ E2E Encryption initialized');
+      } catch (error) {
+        console.error('Failed to initialize encryption:', error);
+        toast.error('Failed to initialize encryption');
+      }
+    };
+
+    if (userInfo?.id && !encryptionReady) {
+      setupEncryption();
+    }
+  }, [userInfo?.id, encryptionReady, initEncryption]);
 
   useEffect(() => {
     if (!userInfo.profileSetup) {
