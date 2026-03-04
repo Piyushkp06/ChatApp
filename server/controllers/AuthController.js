@@ -102,7 +102,10 @@ export const signup= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -123,14 +126,14 @@ export const login= async(request,response,next)=>{
         }
 
         const user = await User.findOne({email});
-        console.log(user._id);
         if(!user){
-            throw new ApiError(400,"User with the given email not found");
+            return response.status(404).json({ message: "User with the given email not found" });
         }
+        console.log("Login attempt for user:", user._id);
 
         const auth=await compare(password,user.password);
         if(!auth){
-            throw new ApiError(400,"Password is incorrect");
+            return response.status(400).json({ message: "Password is incorrect" });
         }
 
         const token = createToken(email, user._id);
@@ -169,7 +172,10 @@ export const login= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -204,7 +210,10 @@ export const getUserInfo= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -242,7 +251,10 @@ export const updateProfile= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -270,7 +282,10 @@ export const addProfileImage= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -295,7 +310,10 @@ export const removeProfileImage= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
 
@@ -310,6 +328,9 @@ export const Logout= async(request,response,next)=>{
     }
     catch(error){
         console.log({error});
-        throw new ApiError(500,"Internal Server Error");
+        if (error instanceof ApiError) {
+            return response.status(error.statusCode).json({ message: error.message });
+        }
+        return response.status(500).json({ message: "Internal Server Error" });
     }
 };
