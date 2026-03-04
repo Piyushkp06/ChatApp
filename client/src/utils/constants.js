@@ -13,8 +13,19 @@ export const LOGOUT_ROUTE=`${AUTH_ROUTES}/logout`;
 
 export const CONTACTS_ROUTES="api/contacts";
 export const SEARCH_CONTACTS_ROUTES=`${CONTACTS_ROUTES}/search`;
+export const SEARCH_USERS_ROUTES=`${CONTACTS_ROUTES}/search-users`;
 export const GET_DM_CONTACTS_ROUTES=`${CONTACTS_ROUTES}/get-contacts-for-dm`;
 export const GET_ALL_CONTACTS_ROUTES=`${CONTACTS_ROUTES}/get-all-contacts`;
+export const GET_MY_CONTACTS_ROUTES=`${CONTACTS_ROUTES}/my-contacts`;
+export const ADD_CONTACT_ROUTE=`${CONTACTS_ROUTES}/add`;
+export const REMOVE_CONTACT_ROUTE=`${CONTACTS_ROUTES}/remove`;
+export const UPDATE_CONTACT_NICKNAME_ROUTE=`${CONTACTS_ROUTES}/update-nickname`;
+export const GET_PENDING_REQUESTS_ROUTE=`${CONTACTS_ROUTES}/pending-requests`;
+export const SEND_CONTACT_REQUEST_ROUTE=`${CONTACTS_ROUTES}/send-request`;
+export const ACCEPT_CONTACT_REQUEST_ROUTE=`${CONTACTS_ROUTES}/accept-request`;
+export const REJECT_CONTACT_REQUEST_ROUTE=`${CONTACTS_ROUTES}/reject-request`;
+export const BLOCK_CONTACT_ROUTE=`${CONTACTS_ROUTES}/block`;
+export const UNBLOCK_CONTACT_ROUTE=`${CONTACTS_ROUTES}/unblock`;
 
 export const MESSAGES_ROUTES="api/messages";
 export const GET_ALL_MESSAGES_ROUTE=`${MESSAGES_ROUTES}/get-messages`;

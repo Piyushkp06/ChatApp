@@ -11,6 +11,24 @@ export const createChatSlice=(set,get)=>({
     unreadCounts: {},
     totalUnread: 0,
     replyingTo: null,
+    // Contacts management
+    myContacts: [],
+    pendingRequests: [],
+    contactsLoaded: false,
+    setMyContacts: (contacts) => set({ myContacts: contacts, contactsLoaded: true }),
+    setPendingRequests: (requests) => set({ pendingRequests: requests }),
+    addMyContact: (contact) => {
+      const contacts = get().myContacts;
+      // Avoid duplicates
+      if (!contacts.find(c => c._id === contact._id)) {
+        set({ myContacts: [...contacts, contact] });
+      }
+    },
+    removeMyContact: (contactId) => {
+      const contacts = get().myContacts.filter(c => c._id !== contactId);
+      set({ myContacts: contacts });
+    },
+    clearContacts: () => set({ myContacts: [], pendingRequests: [], contactsLoaded: false }),
     setReplyingTo: (message) => set({ replyingTo: message }),
     clearReplyingTo: () => set({ replyingTo: null }),
     setChannels:(channels)=>set({channels}),
