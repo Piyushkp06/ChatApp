@@ -22,6 +22,30 @@ recipient:{
         return this.messageType === "text";
     },
 },
+// Reply to another message
+replyTo:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Messages",
+    default:null,
+},
+// Deletion tracking
+deletedForEveryone:{
+    type:Boolean,
+    default:false,
+},
+deletedFor:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Users",
+}],
+// View once media
+viewOnce:{
+    type:Boolean,
+    default:false,
+},
+viewedBy:[{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"Users",
+}],
 // Encrypted message fields
 encrypted:{
     type:Boolean,

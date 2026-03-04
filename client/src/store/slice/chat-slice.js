@@ -10,6 +10,9 @@ export const createChatSlice=(set,get)=>({
     channels:[],
     unreadCounts: {},
     totalUnread: 0,
+    replyingTo: null,
+    setReplyingTo: (message) => set({ replyingTo: message }),
+    clearReplyingTo: () => set({ replyingTo: null }),
     setChannels:(channels)=>set({channels}),
     setIsUploading: (isUploading) => set({ isUploading }),
     setIsDownloading: (isDownloading) => set({ isDownloading }),
@@ -103,6 +106,41 @@ export const createChatSlice=(set,get)=>({
       }
     
       set({ directMessagesContacts: dmContacts });
+    },
+
+    // Delete message for me (hide from local view)
+    deleteMessageForMe: (messageId) => {
+      const messages = get().selectedChatMessages.filter(msg => msg._id !== messageId);
+      set({ selectedChatMessages: messages });
+    },
+
+    // Delete message for everyone (mark as deleted)
+    deleteMessageForEveryone: (messageId) => {
+      const messages = get().selectedChatMessages.map(msg => {
+        if (msg._id === messageId) {
+          return {
+            ...msg,
+            deletedForEveryone: true,
+            content: "This message was deleted"
+          };
+        }
+        return msg;
+      });
+      set({ selectedChatMessages: messages });
+    },
+
+    // Mark view once message as viewed
+    markViewOnceAsViewed: (messageId, viewerId) => {
+      const messages = get().selectedChatMessages.map(msg => {
+        if (msg._id === messageId) {
+          return {
+            ...msg,
+            viewedBy: [...(msg.viewedBy || []), viewerId]
+          };
+        }
+        return msg;
+      });
+      set({ selectedChatMessages: messages });
     },
     
 })

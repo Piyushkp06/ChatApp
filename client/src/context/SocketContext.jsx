@@ -187,7 +187,7 @@ export const SocketProvider = ({ children }) => {
         
         
 
-        socket.current.on("recieve-channel-message",(message)=>{
+        socket.current.on("receive-channel-message",(message)=>{
           const { 
             selectedChatData, 
             selectedChatType, 
@@ -213,9 +213,22 @@ export const SocketProvider = ({ children }) => {
           addChannelInChannelList(message);
         })
 
-     /*   socket.current.on("disconnect", () => {
-          console.log("Disconnected from socket server");
-        });*/
+        // Listen for message deletion events
+        socket.current.on("messageDeletedForMe", ({ messageId }) => {
+          const { deleteMessageForMe } = useAppStore.getState();
+          deleteMessageForMe(messageId);
+        });
+
+        socket.current.on("messageDeletedForEveryone", ({ messageId }) => {
+          const { deleteMessageForEveryone } = useAppStore.getState();
+          deleteMessageForEveryone(messageId);
+        });
+
+        // Listen for view once viewed events
+        socket.current.on("viewOnceViewed", ({ messageId, viewerId }) => {
+          const { markViewOnceAsViewed } = useAppStore.getState();
+          markViewOnceAsViewed(messageId, viewerId);
+        });
       } 
 
       // Cleanup function to properly disconnect the socket and remove listeners

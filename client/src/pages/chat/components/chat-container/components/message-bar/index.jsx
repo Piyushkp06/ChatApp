@@ -7,11 +7,12 @@ import apiClient from '@/lib/api-client';
 import { UPLOAD_FILE_ROUTE } from '@/utils/constants';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Send, Paperclip, Smile, Mic, Image, Lock, LockOpen } from 'lucide-react';
+import { Send, Paperclip, Smile, Mic, Image, Lock, LockOpen, X, Reply, Eye } from 'lucide-react';
 
 function MessageBar() {
   const emojiRef = useRef();
   const fileInputRef = useRef();
+  const viewOnceInputRef = useRef();
   const inputRef = useRef();
   const socket = useSocket();
   
@@ -24,6 +25,8 @@ function MessageBar() {
     encryptionEnabled,
     setEncryptionEnabled,
     identityPublicKey,
+    replyingTo,
+    clearReplyingTo,
   } = useAppStore();
   
   const { encrypt, encryptionReady, establishSession } = useEncryption();
@@ -44,6 +47,13 @@ function MessageBar() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Focus input when replying
+  useEffect(() => {
+    if (replyingTo) {
+      inputRef.current?.focus();
+    }
+  }, [replyingTo]);
 
   const handleAddEmoji = (emoji) => {
     setMessage((message) => message + emoji.emoji);
@@ -81,6 +91,7 @@ function MessageBar() {
             encryptedContent: encryptedContent,
             senderPublicKey: identityPublicKey,
             fileUrl: undefined,
+            replyTo: replyingTo?._id || null,
           });
         } else {
           // Send unencrypted message (fallback or AI chat)
@@ -90,6 +101,7 @@ function MessageBar() {
             recipient: selectedChatData?._id,
             messageType: "text",
             fileUrl: undefined,
+            replyTo: replyingTo?._id || null,
           });
         }
       } finally {
@@ -103,9 +115,11 @@ function MessageBar() {
         messageType: "text",
         fileUrl: undefined,
         channelId: selectedChatData._id,
+        replyTo: replyingTo?._id || null,
       });
     }
     setMessage("");
+    clearReplyingTo();
   };
 
   const handleKeyDown = (e) => {
@@ -121,7 +135,13 @@ function MessageBar() {
     }
   };
 
-  const handleAttachmentChange = async (event) => {
+  const handleViewOnceClick = () => {
+    if (viewOnceInputRef.current) {
+      viewOnceInputRef.current.click();
+    }
+  };
+
+  const handleAttachmentChange = async (event, isViewOnce = false) => {
     try {
       const file = event.target.files[0];
       if (file) {
@@ -145,6 +165,8 @@ function MessageBar() {
               recipient: selectedChatData?._id,
               messageType: "file",
               fileUrl: response.data.filePath,
+              replyTo: replyingTo?._id || null,
+              viewOnce: isViewOnce,
             });
           } else if (selectedChatType === "channel") {
             socket.emit("send-channel-message", {
@@ -153,8 +175,10 @@ function MessageBar() {
               messageType: "file",
               fileUrl: response.data.filePath,
               channelId: selectedChatData._id,
+              replyTo: replyingTo?._id || null,
             });
           }
+          clearReplyingTo();
         }
       }
     } catch (error) {
@@ -165,6 +189,29 @@ function MessageBar() {
 
   return (
     <div className="p-4 bg-[#0d0d12]/80 backdrop-blur-xl border-t border-white/5">
+      {/* Reply indicator */}
+      {replyingTo && (
+        <div className="flex items-center gap-3 mb-2 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20">
+          <Reply className="h-4 w-4 text-violet-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-violet-400">
+              Replying to {replyingTo.sender?.firstName || replyingTo.sender?.email || "message"}
+            </p>
+            <p className="text-sm text-gray-300 truncate">
+              {replyingTo.content || (replyingTo.messageType === "file" ? "Media" : "Message")}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+            onClick={clearReplyingTo}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
       <div className={`
         flex items-end gap-3 p-2 rounded-2xl bg-[#1a1a24] border transition-all duration-200
         ${isFocused ? 'border-violet-500/50 ring-2 ring-violet-500/10' : 'border-white/5'}
@@ -192,7 +239,36 @@ function MessageBar() {
           type="file"
           className="hidden"
           ref={fileInputRef}
-          onChange={handleAttachmentChange}
+          onChange={(e) => handleAttachmentChange(e, false)}
+        />
+
+        {/* View Once Image Button */}
+        {selectedChatType === "contact" && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 shrink-0 rounded-xl text-gray-400 hover:text-violet-400 hover:bg-violet-500/10"
+                  onClick={handleViewOnceClick}
+                >
+                  <Eye className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="bg-[#1a1a24] border-white/10">
+                View Once Photo
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
+        <input
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          ref={viewOnceInputRef}
+          onChange={(e) => handleAttachmentChange(e, true)}
         />
 
         {/* Image Button */}

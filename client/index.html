@@ -4,9 +4,126 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Syncronous Chat App</title>
+    <style>
+      /* Initial loading screen styles */
+      .initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0f0f1a 100%);
+        z-index: 9999;
+        transition: opacity 0.4s ease-out, visibility 0.4s ease-out;
+      }
+      .initial-loader.hidden {
+        opacity: 0;
+        visibility: hidden;
+      }
+      .loader-logo {
+        width: 80px;
+        height: 80px;
+        position: relative;
+        margin-bottom: 24px;
+      }
+      .loader-ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 3px solid transparent;
+        border-top-color: #8b5cf6;
+        animation: spin 1s linear infinite;
+      }
+      .loader-ring:nth-child(2) {
+        inset: 8px;
+        border-top-color: #a78bfa;
+        animation-duration: 1.5s;
+        animation-direction: reverse;
+      }
+      .loader-ring:nth-child(3) {
+        inset: 16px;
+        border-top-color: #c4b5fd;
+        animation-duration: 2s;
+      }
+      .loader-icon {
+        position: absolute;
+        inset: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .loader-icon svg {
+        width: 28px;
+        height: 28px;
+        fill: #8b5cf6;
+        animation: pulse 2s ease-in-out infinite;
+      }
+      .loader-text {
+        color: #e0e0e0;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 18px;
+        font-weight: 500;
+        letter-spacing: 0.05em;
+        margin-bottom: 16px;
+      }
+      .loader-subtext {
+        color: #a0a0a0;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 400;
+        letter-spacing: 0.1em;
+      }
+      .dot-animate {
+        animation: dotPulse 1.5s ease-in-out infinite;
+      }
+      @keyframes dotPulse {
+        0%, 20% { opacity: 0; }
+        40% { opacity: 1; }
+        100% { opacity: 1; }
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.8; }
+      }
+      @keyframes bounce {
+        0%, 80%, 100% { transform: translateY(0); }
+        40% { transform: translateY(-10px); }
+      }
+    </style>
   </head>
   <body>
+    <!-- Initial loading screen -->
+    <div class="initial-loader" id="initial-loader">
+      <div class="loader-logo">
+        <div class="loader-ring"></div>
+        <div class="loader-ring"></div>
+        <div class="loader-ring"></div>
+        <div class="loader-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+          </svg>
+        </div>
+      </div>
+      <div class="loader-text">Syncronous</div>
+      <div class="loader-subtext">Loading<span class="dot-animate">...</span></div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <script>
+      // Function to hide loader - called by React when ready
+      window.hideInitialLoader = function() {
+        var loader = document.getElementById('initial-loader');
+        if (loader) {
+          loader.classList.add('hidden');
+          setTimeout(function() {
+            if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+          }, 400);
+        }
+      };
+    </script>
   </body>
 </html>

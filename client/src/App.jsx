@@ -7,14 +7,18 @@ import { useAppStore } from "./store";
 import { GET_USER_INFO } from "./utils/constants";
 import apiClient from "./lib/api-client";
 
-// Loading spinner for better UX
-const Loader = () => <div style={{ textAlign: "center", marginTop: "20%" }}>Loading...</div>;
+// Hide the initial HTML loader when React is ready
+const hideInitialLoader = () => {
+  if (typeof window !== 'undefined' && window.hideInitialLoader) {
+    window.hideInitialLoader();
+  }
+};
 
 // Route wrapper for private routes
 const PrivateRoute = ({ children }) => {
   const { userInfo } = useAppStore();
 
-  if (userInfo === undefined) return <Loader />; // Graceful handling during state update
+  if (userInfo === undefined) return null; // Initial HTML loader is still visible
 
   return userInfo ? children : <Navigate to="/auth" />;
 };
@@ -23,7 +27,7 @@ const PrivateRoute = ({ children }) => {
 const AuthRoute = ({ children }) => {
   const { userInfo } = useAppStore();
 
-  if (userInfo === undefined) return <Loader />; // Graceful handling during state update
+  if (userInfo === undefined) return null; // Initial HTML loader is still visible
 
   return !userInfo ? children : <Navigate to="/chat" />;
 };
@@ -55,7 +59,14 @@ function App() {
     else setLoading(false);
   }, [userInfo, setUserInfo]);
 
-  if (loading) return <Loader />;
+  // Hide the initial HTML loader once we're done loading
+  useEffect(() => {
+    if (!loading) {
+      hideInitialLoader();
+    }
+  }, [loading]);
+
+  if (loading) return null; // Initial HTML loader is still visible
 
   return (
     <BrowserRouter>
