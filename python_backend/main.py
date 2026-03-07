@@ -1,12 +1,13 @@
 """
 Python AI Backend for ChatApp
-Handles all AI-related features including chat and summarization
+Handles AI-related features for chat
 """
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from contextlib import asynccontextmanager
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.config.database import connect_db, close_db
 from app.routes import ai_routes
@@ -26,7 +27,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="ChatApp AI Backend",
-    description="AI-powered features for ChatApp including chat and summarization",
+    description="AI-powered features for ChatApp",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -48,6 +49,9 @@ app.add_middleware(
 
 # Include routes
 app.include_router(ai_routes.router, prefix="/api/ai", tags=["AI"])
+
+# Prometheus metrics
+Instrumentator().instrument(app).expose(app)
 
 # Health check endpoint
 @app.get("/api/health")

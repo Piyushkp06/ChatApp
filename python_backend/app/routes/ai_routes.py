@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 from app.middlewares.auth import verify_token
-from app.controllers.ai_controller import generate_ai_response, summarize_chat
+from app.controllers.ai_controller import generate_ai_response
 
 router = APIRouter()
 
@@ -14,10 +14,6 @@ router = APIRouter()
 class GenerateRequest(BaseModel):
     content: str
     userId: Optional[str] = None  # Optional for socket-based requests
-
-class SummarizeRequest(BaseModel):
-    chatId: str
-    chatType: str = "contact"  # "contact" or "channel"
 
 # Response Models
 class MessageResponse(BaseModel):
@@ -31,11 +27,6 @@ class MessageResponse(BaseModel):
 class GenerateResponse(BaseModel):
     userMessage: dict
     aiMessage: dict
-
-class SummarizeResponse(BaseModel):
-    summary: str
-    messageCount: int
-    textMessageCount: int
 
 @router.post("/generate", response_model=GenerateResponse)
 async def generate(request: Request, body: GenerateRequest):
@@ -59,24 +50,6 @@ async def generate(request: Request, body: GenerateRequest):
     except Exception as e:
         print(f"Generate AI error: {e}")
         raise HTTPException(status_code=500, detail="Failed to generate AI response")
-
-@router.post("/summarize", response_model=SummarizeResponse)
-async def summarize(request: Request, body: SummarizeRequest):
-    """
-    Summarize chat conversation
-    """
-    # Verify authentication
-    user_id = await verify_token(request)
-    
-    if not body.chatId:
-        raise HTTPException(status_code=400, detail="Chat ID is required")
-    
-    try:
-        result = await summarize_chat(user_id, body.chatId, body.chatType)
-        return result
-    except Exception as e:
-        print(f"Summarize error: {e}")
-        raise HTTPException(status_code=500, detail="Failed to summarize chat")
 
 @router.get("/health")
 async def health():

@@ -3,6 +3,7 @@ import dotenv from "dotenv"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import mongoose from "mongoose"
+import client from "prom-client"
 import authRoutes from "./routes/AuthRoutes.js"
 import contactsRoutes from "./routes/ContactRoutes.js"
 import setupSocket, { userSocketMap, getIO } from "./socket.js"
@@ -13,6 +14,55 @@ import redis from "./config/redis.js"
 import rabbitmq from "./config/rabbitmq.js"
 import { startNotificationWorker } from "./workers/notificationWorker.js"
 import { ApiError } from "./utils/ApiError.js"
+
+// Prometheus metrics setup
+const register = new client.Registry();
+client.collectDefaultMetrics({ register });
+
+const httpRequestDuration = new client.Histogram({
+  name: 'http_request_duration_seconds',
+  help: 'Duration of HTTP requests in seconds',
+  labelNames: ['method', 'route', 'status_code'],
+  buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
+});
+
+const httpRequestsTotal = new client.Counter({
+  name: 'http_requests_total',
+  help: 'Total number of HTTP requests',
+  labelNames: ['method', 'route', 'status_code']
+});
+
+export const activeConnections = new client.Gauge({
+  name: 'websocket_active_connections',
+  help: 'Number of active WebSocket connections'
+});
+
+const authAttempts = new client.Counter({
+  name: 'auth_attempts_total',
+  help: 'Total authentication attempts',
+  labelNames: ['type', 'status']
+});
+
+const cacheHits = new client.Counter({
+  name: 'cache_hits_total',
+  help: 'Total cache hits',
+  labelNames: ['cache_type']
+});
+
+const cacheMisses = new client.Counter({
+  name: 'cache_misses_total',
+  help: 'Total cache misses',
+  labelNames: ['cache_type']
+});
+
+register.registerMetric(httpRequestDuration);
+register.registerMetric(httpRequestsTotal);
+register.registerMetric(activeConnections);
+register.registerMetric(authAttempts);
+register.registerMetric(cacheHits);
+register.registerMetric(cacheMisses);
+
+export { register, authAttempts, cacheHits, cacheMisses };
 
 dotenv.config();
 
@@ -35,6 +85,24 @@ app.use("/uploads/files",express.static("uploads/files"));
 app.use(cookieParser());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Prometheus request tracking middleware
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = (Date.now() - start) / 1000;
+    const route = req.route?.path || req.path;
+    httpRequestDuration.labels(req.method, route, res.statusCode).observe(duration);
+    httpRequestsTotal.labels(req.method, route, res.statusCode).inc();
+  });
+  next();
+});
+
+// Prometheus metrics endpoint
+app.get("/metrics", async (req, res) => {
+  res.set('Content-Type', register.contentType);
+  res.end(await register.metrics());
+});
 
 app.use("/api/auth",authRoutes);
 app.use("/api/contacts",contactsRoutes);
