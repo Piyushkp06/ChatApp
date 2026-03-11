@@ -11,6 +11,7 @@ import { FileArchive, Download, X, Image as ImageIcon, Lock, ShieldCheck, Shield
 import { sessionManager } from "@/utils/ratchetSession";
 import { initSodium } from "@/utils/crypto";
 import MessageContextMenu from "../message-context-menu";
+import VoiceMessagePlayer from "@/components/VoiceMessagePlayer";
 
 function MessageContainer() {
   const scrollRef = useRef();
@@ -343,6 +344,14 @@ function MessageContainer() {
                     )}
                   </div>
                 )}
+
+                {/* Voice Message */}
+                {message.messageType === "voice" && (
+                  <VoiceMessagePlayer 
+                    fileUrl={message.fileUrl} 
+                    isSent={isSent}
+                  />
+                )}
               </>
             )}
 
@@ -497,6 +506,14 @@ function MessageContainer() {
                         </div>
                       )}
                     </div>
+                  )}
+
+                  {/* Voice Message */}
+                  {message.messageType === "voice" && (
+                    <VoiceMessagePlayer 
+                      fileUrl={message.fileUrl} 
+                      isSent={isSent}
+                    />
                   )}
                 </>
               )}

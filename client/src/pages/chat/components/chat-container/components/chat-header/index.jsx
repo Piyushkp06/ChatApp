@@ -9,6 +9,7 @@ import { getColor } from '@/lib/utils';
 import { X, Hash, Users, Phone, Video, MoreVertical } from 'lucide-react';
 import SummarizeDialog from '../summarize-dialog';
 import apiClient from  '@/lib/api-client';
+import { useVoiceChat } from '@/hooks/useVoiceChat';
 
 // Format last seen time in a human-readable way
 const formatLastSeen = (lastSeenDate) => {
@@ -38,8 +39,26 @@ const formatLastSeen = (lastSeenDate) => {
 
 function ChatHeader() {
   const { closeChat, selectedChatData, selectedChatType } = useAppStore();
+  const { startCall, callState } = useVoiceChat();
   const [userStatus, setUserStatus] = useState({ online: false, lastSeen: null });
   const [statusLoading, setStatusLoading] = useState(false);
+
+  // Check if we can make a call (only to contacts, not AI, and not already in a call)
+  const canMakeCall = selectedChatType === 'contact' && 
+                      selectedChatData?._id !== '649e8c5a3c2d3a1b9a5f4e2a' && 
+                      callState === 'idle';
+
+  const handleVoiceCall = () => {
+    if (canMakeCall) {
+      startCall('voice');
+    }
+  };
+
+  const handleVideoCall = () => {
+    if (canMakeCall) {
+      startCall('video');
+    }
+  };
 
   // Fetch user status when selected contact changes
   useEffect(() => {
@@ -183,13 +202,19 @@ function ChatHeader() {
               <Button 
                 variant="ghost" 
                 size="icon"
-                className="h-9 w-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+                onClick={handleVoiceCall}
+                disabled={!canMakeCall}
+                className={`h-9 w-9 rounded-lg ${
+                  canMakeCall 
+                    ? 'text-gray-400 hover:text-green-400 hover:bg-green-500/10' 
+                    : 'text-gray-600 cursor-not-allowed'
+                }`}
               >
                 <Phone className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-[#1a1a24] border-white/10">
-              Voice Call
+              {canMakeCall ? 'Voice Call' : 'Cannot call this contact'}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -198,15 +223,21 @@ function ChatHeader() {
           <Tooltip>
             <TooltipTrigger asChild>
               <Button 
-                variant="ghost" 
+                variant="ghost"
                 size="icon"
-                className="h-9 w-9 rounded-lg text-gray-400 hover:text-white hover:bg-white/10"
+                onClick={handleVideoCall}
+                disabled={!canMakeCall}
+                className={`h-9 w-9 rounded-lg ${
+                  canMakeCall 
+                    ? 'text-gray-400 hover:text-violet-400 hover:bg-violet-500/10' 
+                    : 'text-gray-600 cursor-not-allowed'
+                }`}
               >
                 <Video className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom" className="bg-[#1a1a24] border-white/10">
-              Video Call
+              {canMakeCall ? 'Video Call' : 'Cannot call this contact'}
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

@@ -229,6 +229,13 @@ export const SocketProvider = ({ children }) => {
           const { markViewOnceAsViewed } = useAppStore.getState();
           markViewOnceAsViewed(messageId, viewerId);
         });
+
+        // Listen for incoming voice/video calls
+        socket.current.on("incoming-call", (data) => {
+          const { receiveIncomingCall } = useAppStore.getState();
+          console.log("📞 Incoming call:", data);
+          receiveIncomingCall(data);
+        });
       } 
 
       // Cleanup function to properly disconnect the socket and remove listeners

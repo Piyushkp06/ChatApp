@@ -1,5 +1,13 @@
 FROM node:20-alpine AS builder
 
+# Build arguments for Vite environment variables
+ARG VITE_SERVER_URL=http://localhost:8597
+ARG VITE_AI_SERVER_URL=http://localhost:8000
+
+# Set as environment variables for build
+ENV VITE_SERVER_URL=$VITE_SERVER_URL
+ENV VITE_AI_SERVER_URL=$VITE_AI_SERVER_URL
+
 WORKDIR /app
 
 # Copy package files

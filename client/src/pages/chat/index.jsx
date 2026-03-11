@@ -8,6 +8,8 @@ import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { Upload, Download } from 'lucide-react';
 import { useEncryption } from '@/hooks/useEncryption';
+import VoiceCallModal from '@/components/VoiceCallModal';
+import IncomingCallModal from '@/components/IncomingCallModal';
 
 function Chat() {
   const {
@@ -105,6 +107,10 @@ function Chat() {
           <ChatContainer />
         )}
       </div>
+
+      {/* Voice/Video Call Modals */}
+      <VoiceCallModal />
+      <IncomingCallModal />
     </div>
   );
 }

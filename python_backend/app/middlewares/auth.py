@@ -27,7 +27,7 @@ async def verify_token(request: Request) -> str:
         # Decode JWT token using the same secret as Node.js
         payload = jwt.decode(
             token,
-            settings.JWT_SECRET,
+            settings.JWT_KEY,
             algorithms=["HS256"]
         )
         

@@ -149,6 +149,7 @@ export const login= async(request,response,next)=>{
             lastName: user.lastName,
             image: user.image,
             color: user.color,
+            description: user.description,
         });
 
         response.cookie("jwt", token, {
@@ -167,6 +168,7 @@ export const login= async(request,response,next)=>{
                 lastName:user.lastName,
                 image:user.image,
                 color:user.color,
+                description:user.description,
             },
         });
     }
@@ -201,6 +203,7 @@ export const getUserInfo= async(request,response,next)=>{
             lastName:userData.lastName,
             image:userData.image,
             color:userData.color,
+            description:userData.description,
         };
 
         // Cache user
@@ -220,7 +223,7 @@ export const getUserInfo= async(request,response,next)=>{
 export const updateProfile= async(request,response,next)=>{
     try{
         const {userId}=request;
-        const {firstName,lastName,color}=request.body;
+        const {firstName,lastName,color,description}=request.body;
         if(!firstName || !lastName){
             return response.status(404).send("Firstname,lastname and color is required")
         }    
@@ -229,6 +232,7 @@ export const updateProfile= async(request,response,next)=>{
                 firstName,
                 lastName,
                 color,
+                description,
                 profileSetup:true,
             },
             {new:true,runValidators:true}
@@ -242,6 +246,7 @@ export const updateProfile= async(request,response,next)=>{
             lastName:userData.lastName,
             image:userData.image,
             color:userData.color,
+            description:userData.description,
         };
 
         // Update cache

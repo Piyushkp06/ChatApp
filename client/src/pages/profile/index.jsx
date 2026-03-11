@@ -10,13 +10,15 @@ import { toast } from 'sonner';
 import apiClient from '@/lib/api-client';
 import { ADD_PROFILE_IMAGE_ROUTE, REMOVE_PROFILE_IMAGE_ROUTE, UPDATE_PROFILE_ROUTE, HOST } from '@/utils/constants';
 import { colors, getColor } from '@/lib/utils';
-import { ArrowLeft, Camera, Trash2, User, Mail, Sparkles, Check } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { ArrowLeft, Camera, Trash2, User, Mail, Sparkles, Check, FileText } from 'lucide-react';
 
 function Profile() {
   const navigate = useNavigate();
   const { userInfo, setUserInfo } = useAppStore();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [description, setDescription] = useState("");
   const [image, setImage] = useState(null);
   const [hovered, setHovered] = useState(false);
   const [selectedColor, setSelectedColor] = useState(0);
@@ -28,6 +30,7 @@ function Profile() {
       setFirstName(userInfo.firstName);
       setLastName(userInfo.lastName);
       setSelectedColor(userInfo.color);
+      setDescription(userInfo.description || "");
     }
     if (userInfo.image) {
       setImage(`${HOST}/${userInfo.image}`);
@@ -52,7 +55,7 @@ function Profile() {
       try {
         const response = await apiClient.post(
           UPDATE_PROFILE_ROUTE,
-          { firstName, lastName, color: selectedColor },
+          { firstName, lastName, color: selectedColor, description },
           { withCredentials: true }
         );
         if (response.status === 200 && response.data) {
@@ -264,6 +267,23 @@ function Profile() {
                   onChange={(e) => setLastName(e.target.value)}
                   className="h-12 bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl"
                 />
+              </div>
+
+              {/* Description/Bio */}
+              <div className="space-y-2">
+                <label className="text-sm text-gray-400 flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  About Me
+                </label>
+                <Textarea
+                  placeholder="Tell others about yourself... (max 200 characters)"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+                  maxLength={200}
+                  rows={3}
+                  className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500 focus:ring-violet-500/20 rounded-xl resize-none"
+                />
+                <p className="text-xs text-gray-500 text-right">{description.length}/200</p>
               </div>
             </div>
 

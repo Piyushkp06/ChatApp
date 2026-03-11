@@ -313,6 +313,66 @@ const setupSocket = (server) => {
     socket.on("deleteMessageForMe", (data) => deleteMessageForMe(data));
     socket.on("deleteMessageForEveryone", (data) => deleteMessageForEveryone(data));
     socket.on("markViewOnceViewed", (data) => markViewOnceViewed(data));
+    
+    // Voice/Video Call Signaling Events
+    socket.on("call-user", ({ to, offer, callType, callerInfo }) => {
+      const recipientSocketId = userSocketMap.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("incoming-call", {
+          from: userId,
+          offer,
+          callType,
+          callerInfo
+        });
+        console.log(`📞 ${callType} call from ${userId} to ${to}`);
+      } else {
+        // User is offline
+        socket.emit("call-unavailable", { reason: "User is offline" });
+      }
+    });
+
+    socket.on("call-accepted", ({ to, answer }) => {
+      const callerSocketId = userSocketMap.get(to);
+      if (callerSocketId) {
+        io.to(callerSocketId).emit("call-accepted", { answer });
+        console.log(`✅ Call accepted by ${userId}`);
+      }
+    });
+
+    socket.on("call-rejected", ({ to, reason }) => {
+      const callerSocketId = userSocketMap.get(to);
+      if (callerSocketId) {
+        io.to(callerSocketId).emit("call-rejected", { reason });
+        console.log(`❌ Call rejected by ${userId}`);
+      }
+    });
+
+    socket.on("ice-candidate", ({ to, candidate }) => {
+      const recipientSocketId = userSocketMap.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("ice-candidate", { candidate, from: userId });
+      }
+    });
+
+    socket.on("end-call", ({ to }) => {
+      const recipientSocketId = userSocketMap.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("call-ended", { from: userId });
+        console.log(`📴 Call ended between ${userId} and ${to}`);
+      }
+    });
+
+    socket.on("toggle-media", ({ to, mediaType, enabled }) => {
+      const recipientSocketId = userSocketMap.get(to);
+      if (recipientSocketId) {
+        io.to(recipientSocketId).emit("remote-media-toggle", { 
+          mediaType, 
+          enabled,
+          from: userId 
+        });
+      }
+    });
+
     socket.on("disconnect", () => disconnect(socket));
   });
 

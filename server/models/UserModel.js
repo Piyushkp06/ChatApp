@@ -28,6 +28,11 @@ const userSchema=new mongoose.Schema({
         required:false,
 
     },
+    description:{
+        type:String,
+        required:false,
+        maxlength:200,
+    },
     profileSetup:{
         type:Boolean,
         default:false,
